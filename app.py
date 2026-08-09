@@ -104,6 +104,44 @@ def search_index(index, model, query, chunk_records, top_k=TOP_K):
     return results
 
 
+def summarize_document(text, filename, api_key=None):
+    if api_key:
+        try:
+            from openai import OpenAI
+
+            client = OpenAI(api_key=api_key)
+            truncated = text[:12000]
+            prompt = (
+                "Summarize the following clinical document in 3-5 concise bullet points. "
+                "Stick strictly to facts present in the text — do not add outside "
+                "information.\n\n"
+                "Then add a 'General lifestyle considerations' section with a few general, "
+                "non-prescriptive lifestyle suggestions that relate to the document's "
+                "topic (e.g. diet, exercise, monitoring habits) — keep these general, not "
+                "individualized medical advice.\n\n"
+                "End with this exact line on its own: '⚠️ This summary is for reference "
+                "only. Please consult your physician before making any changes based on "
+                "this information.'\n\n"
+                f"Document:\n{truncated}"
+            )
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.2,
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            return f"_(Summary generation failed: {e})_"
+
+    preview = text[:400].strip()
+    return (
+        "_(Add an OpenAI key in the sidebar for an automatic AI summary with lifestyle "
+        f"suggestions. Showing a preview of the document instead:)_\n\n{preview}...\n\n"
+        "⚠️ This is a raw excerpt, not a summary. Please consult your physician before "
+        "making any changes based on this information."
+    )
+
+
 def _fallback_answer(retrieved):
     parts = [
         f"**From {r['source']} (chunk {r['chunk_index']}):**\n{r['text']}"
@@ -206,6 +244,19 @@ def get_embedding_model():
     return load_embedding_model()
 
 
+def _citation_label(c):
+    if c["chunk_index"] == "summary":
+        return f'{c["source"]} · full document'
+    return f'{c["source"]} · chunk {c["chunk_index"]}'
+
+
+def _render_citations(citations):
+    tags = "".join(
+        f'<span class="medrag-citation">{_citation_label(c)}</span>' for c in citations
+    )
+    st.markdown(tags, unsafe_allow_html=True)
+
+
 def init_session_state():
     defaults = {
         "documents": {},  # filename -> chunk count
@@ -230,7 +281,7 @@ def reset_documents():
     st.session_state.errors = []
 
 
-def process_uploaded_files(uploaded_files):
+def process_uploaded_files(uploaded_files, api_key=None):
     new_files = [
         f for f in uploaded_files if (f.name, f.size) not in st.session_state.processed_keys
     ]
@@ -266,6 +317,15 @@ def process_uploaded_files(uploaded_files):
                             {"source": f.name, "chunk_index": ci, "text": chunk}
                         )
                     st.session_state.documents[f.name] = len(chunks)
+
+                    summary = summarize_document(text, f.name, api_key=api_key)
+                    st.session_state.messages.append(
+                        {
+                            "role": "assistant",
+                            "content": f"**Summary of {f.name}:**\n\n{summary}",
+                            "citations": [{"source": f.name, "chunk_index": "summary"}],
+                        }
+                    )
         except Exception as e:
             st.session_state.errors.append(f"Unexpected error processing '{f.name}': {e}")
         finally:
@@ -279,13 +339,20 @@ def render_sidebar():
     st.sidebar.title("MedRAG")
     st.sidebar.caption("Clinical document Q&A")
 
+    st.sidebar.subheader("Generation (optional)")
+    api_key = st.sidebar.text_input(
+        "OpenAI API key",
+        type="password",
+        help="Add a key for AI-generated answers and document summaries. Leave blank to use free local retrieval-only mode.",
+    )
+
     uploaded_files = st.sidebar.file_uploader(
         "Upload clinical PDFs",
         type=["pdf"],
         accept_multiple_files=True,
     )
     if uploaded_files:
-        process_uploaded_files(uploaded_files)
+        process_uploaded_files(uploaded_files, api_key=api_key or None)
 
     if st.session_state.errors:
         for err in st.session_state.errors:
@@ -297,13 +364,6 @@ def render_sidebar():
             st.sidebar.write(f"📄 {name} — {count} chunks")
     else:
         st.sidebar.caption("No documents indexed yet.")
-
-    st.sidebar.subheader("Generation (optional)")
-    api_key = st.sidebar.text_input(
-        "OpenAI API key",
-        type="password",
-        help="Leave blank to use free local retrieval-only mode.",
-    )
 
     st.sidebar.divider()
     col1, col2 = st.sidebar.columns(2)
@@ -330,11 +390,7 @@ def render_chat():
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
             if msg.get("citations"):
-                tags = "".join(
-                    f'<span class="medrag-citation">{c["source"]} · chunk {c["chunk_index"]}</span>'
-                    for c in msg["citations"]
-                )
-                st.markdown(tags, unsafe_allow_html=True)
+                _render_citations(msg["citations"])
 
     query = st.chat_input("Ask a question about the uploaded documents...")
     if not query:
@@ -358,11 +414,7 @@ def render_chat():
                 answer, citations = generate_answer(query, retrieved, api_key=st.session_state.get("api_key"))
             st.markdown(answer)
             if citations:
-                tags = "".join(
-                    f'<span class="medrag-citation">{c["source"]} · chunk {c["chunk_index"]}</span>'
-                    for c in citations
-                )
-                st.markdown(tags, unsafe_allow_html=True)
+                _render_citations(citations)
 
     st.session_state.messages.append(
         {"role": "assistant", "content": answer, "citations": citations}

@@ -40,6 +40,7 @@ Clinical staff and clinic operations teams need fast, trustworthy answers from t
 - Chat interface with persistent history for the duration of the session.
 - Retrieval of top-k relevant chunks per query; answer generation either via OpenAI (`gpt-4o-mini`, if a key is supplied) or direct passage return (fallback).
 - Every answer displays citations: source filename + chunk index.
+- On successful indexing, each document is automatically summarized in the chat (OpenAI if a key is present — including general lifestyle considerations and a physician-consultation reminder; a raw text preview otherwise).
 - Sidebar shows: processing status, progress bar during ingestion, list of indexed documents with chunk counts, any processing errors.
 - "Clear chat" button resets chat history only.
 - "Reset all documents" button clears the index, chunk store, and document list.

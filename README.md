@@ -21,6 +21,7 @@ Clinical teams sit on huge piles of PDFs — protocols, guidelines, drug monogra
 MedRAG lets you upload one or more PDFs, then ask questions in a chat interface. Every answer is grounded in the actual text of your documents and **cites the exact source file and chunk** it was pulled from — so you can always go verify the primary source yourself.
 
 - Upload multiple PDFs at once; watch them get processed in real time
+- Automatically summarizes each document as soon as it's indexed — with an OpenAI key, the summary includes general lifestyle considerations and always closes with a reminder to consult a physician before acting on it
 - Ask questions in natural language, get answers in a persistent chat thread
 - Works completely free and offline-capable by default — no API key required
 - Optionally add an OpenAI key for more fluent, synthesized answers (`gpt-4o-mini`)
