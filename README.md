@@ -2,6 +2,8 @@
 
 **Ask your clinical documents a question. Get an answer with the exact source and passage it came from.**
 
+**🔗 Try it live: [medrag-production-b839.up.railway.app](https://medrag-production-b839.up.railway.app)** — no install needed, upload a PDF and ask a question.
+
 ## 🎥 Demo
 
 > _[Loom demo link — paste here]_
