@@ -26,7 +26,7 @@ MedRAG lets you upload one or more PDFs, then ask questions in a chat interface.
 - Automatically summarizes each document as soon as it's indexed — with an OpenAI key, the summary includes general lifestyle considerations and always closes with a reminder to consult a physician before acting on it
 - Ask questions in natural language, get answers in a persistent chat thread
 - Works completely free and offline-capable by default — no API key required
-- Optionally add an OpenAI key for more fluent, synthesized answers (`gpt-4o-mini`)
+- Optionally add an OpenAI or Claude key (sidebar, or `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` env vars) for more fluent, synthesized answers (`gpt-4o-mini` or `claude-haiku-4-5`)
 - Every response is cited down to the source document and chunk
 - Handles messy real-world PDFs (encrypted, scanned/image-only, empty) without crashing — errors surface clearly in the sidebar instead
 
