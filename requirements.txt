@@ -4,3 +4,4 @@ sentence-transformers>=2.7
 faiss-cpu>=1.8
 numpy>=1.26
 openai>=1.30
+anthropic>=0.40

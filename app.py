@@ -1,6 +1,7 @@
 """MedRAG — Streamlit RAG app for clinical PDF Q&A."""
 
 import io
+import os
 import re
 
 import faiss
@@ -13,6 +14,11 @@ EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 CHUNK_SIZE = 800
 CHUNK_OVERLAP = 150
 TOP_K = 4
+
+PROVIDERS = {
+    "OpenAI": {"env": "OPENAI_API_KEY", "model": "gpt-4o-mini"},
+    "Claude": {"env": "ANTHROPIC_API_KEY", "model": "claude-haiku-4-5-20251001"},
+}
 
 # ---------------------------------------------------------------------------
 # Core RAG functions (no Streamlit dependency — reused by demo.py)
@@ -104,12 +110,32 @@ def search_index(index, model, query, chunk_records, top_k=TOP_K):
     return results
 
 
-def summarize_document(text, filename, api_key=None):
+def llm_complete(prompt, api_key, provider="OpenAI"):
+    """Single-turn completion via the chosen provider. Raises on failure."""
+    model = PROVIDERS[provider]["model"]
+    if provider == "Claude":
+        from anthropic import Anthropic
+
+        response = Anthropic(api_key=api_key).messages.create(
+            model=model,
+            max_tokens=1024,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return "".join(b.text for b in response.content if b.type == "text").strip()
+
+    from openai import OpenAI
+
+    response = OpenAI(api_key=api_key).chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.2,
+    )
+    return response.choices[0].message.content.strip()
+
+
+def summarize_document(text, filename, api_key=None, provider="OpenAI"):
     if api_key:
         try:
-            from openai import OpenAI
-
-            client = OpenAI(api_key=api_key)
             truncated = text[:12000]
             prompt = (
                 "Summarize the following clinical document in 3-5 concise bullet points. "
@@ -124,18 +150,13 @@ def summarize_document(text, filename, api_key=None):
                 "this information.'\n\n"
                 f"Document:\n{truncated}"
             )
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.2,
-            )
-            return response.choices[0].message.content.strip()
+            return llm_complete(prompt, api_key, provider)
         except Exception as e:
             return f"_(Summary generation failed: {e})_"
 
     preview = text[:400].strip()
     return (
-        "_(Add an OpenAI key in the sidebar for an automatic AI summary with lifestyle "
+        "_(Add an OpenAI or Claude key in the sidebar for an automatic AI summary with lifestyle "
         f"suggestions. Showing a preview of the document instead:)_\n\n{preview}...\n\n"
         "⚠️ This is a raw excerpt, not a summary. Please consult your physician before "
         "making any changes based on this information."
@@ -150,7 +171,7 @@ def _fallback_answer(retrieved):
     return "\n\n---\n\n".join(parts)
 
 
-def generate_answer(query, retrieved, api_key=None):
+def generate_answer(query, retrieved, api_key=None, provider="OpenAI"):
     """Returns (answer_text, citations)."""
     if not retrieved:
         return "I couldn't find anything relevant in the uploaded documents.", []
@@ -161,9 +182,6 @@ def generate_answer(query, retrieved, api_key=None):
 
     if api_key:
         try:
-            from openai import OpenAI
-
-            client = OpenAI(api_key=api_key)
             context_block = "\n\n".join(
                 f"[Source: {r['source']}, chunk {r['chunk_index']}]\n{r['text']}"
                 for r in retrieved
@@ -174,17 +192,11 @@ def generate_answer(query, retrieved, api_key=None):
                 "If the context doesn't contain the answer, say so plainly.\n\n"
                 f"Context:\n{context_block}\n\nQuestion: {query}\n\nAnswer:"
             )
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[{"role": "user", "content": prompt}],
-                temperature=0.2,
-            )
-            answer = response.choices[0].message.content.strip()
-            return answer, citations
+            return llm_complete(prompt, api_key, provider), citations
         except Exception as e:
             fallback = _fallback_answer(retrieved)
             return (
-                f"_(OpenAI generation failed: {e}. Showing retrieved passages instead.)_"
+                f"_({provider} generation failed: {e}. Showing retrieved passages instead.)_"
                 f"\n\n{fallback}",
                 citations,
             )
@@ -281,7 +293,7 @@ def reset_documents():
     st.session_state.errors = []
 
 
-def process_uploaded_files(uploaded_files, api_key=None):
+def process_uploaded_files(uploaded_files, api_key=None, provider="OpenAI"):
     new_files = [
         f for f in uploaded_files if (f.name, f.size) not in st.session_state.processed_keys
     ]
@@ -318,7 +330,7 @@ def process_uploaded_files(uploaded_files, api_key=None):
                         )
                     st.session_state.documents[f.name] = len(chunks)
 
-                    summary = summarize_document(text, f.name, api_key=api_key)
+                    summary = summarize_document(text, f.name, api_key=api_key, provider=provider)
                     st.session_state.messages.append(
                         {
                             "role": "assistant",
@@ -340,11 +352,22 @@ def render_sidebar():
     st.sidebar.caption("Clinical document Q&A")
 
     st.sidebar.subheader("Generation (optional)")
-    api_key = st.sidebar.text_input(
-        "OpenAI API key",
+    provider = st.sidebar.selectbox("Provider", list(PROVIDERS))
+    env_name = PROVIDERS[provider]["env"]
+    env_key = os.environ.get(env_name)
+    if not env_key:
+        try:
+            env_key = st.secrets.get(env_name)
+        except Exception:
+            env_key = None
+    typed_key = st.sidebar.text_input(
+        f"{provider} API key",
         type="password",
-        help="Add a key for AI-generated answers and document summaries. Leave blank to use free local retrieval-only mode.",
+        help=f"Add a key for AI-generated answers and document summaries, or set {env_name}. Leave blank to use free local retrieval-only mode.",
     )
+    api_key = typed_key or env_key
+    if api_key and not typed_key:
+        st.sidebar.caption(f"Using {env_name} from the environment.")
 
     uploaded_files = st.sidebar.file_uploader(
         "Upload clinical PDFs",
@@ -352,7 +375,7 @@ def render_sidebar():
         accept_multiple_files=True,
     )
     if uploaded_files:
-        process_uploaded_files(uploaded_files, api_key=api_key or None)
+        process_uploaded_files(uploaded_files, api_key=api_key or None, provider=provider)
 
     if st.session_state.errors:
         for err in st.session_state.errors:
@@ -374,7 +397,7 @@ def render_sidebar():
         reset_documents()
         st.rerun()
 
-    return api_key
+    return api_key, provider
 
 
 def render_chat():
@@ -411,7 +434,12 @@ def render_chat():
                 retrieved = search_index(
                     st.session_state.index, model, query, st.session_state.chunk_records
                 )
-                answer, citations = generate_answer(query, retrieved, api_key=st.session_state.get("api_key"))
+                answer, citations = generate_answer(
+                    query,
+                    retrieved,
+                    api_key=st.session_state.get("api_key"),
+                    provider=st.session_state.get("provider", "OpenAI"),
+                )
             st.markdown(answer)
             if citations:
                 _render_citations(citations)
@@ -426,8 +454,9 @@ def main():
     st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
     init_session_state()
 
-    api_key = render_sidebar()
+    api_key, provider = render_sidebar()
     st.session_state["api_key"] = api_key or None
+    st.session_state["provider"] = provider
 
     render_chat()
 
