@@ -188,7 +188,7 @@ def generate_answer(query, retrieved, api_key=None, provider="OpenAI"):
             )
             prompt = (
                 "You are a clinical reference assistant. Answer the question using "
-                "ONLY the context below. Cite sources inline like (source, chunk N). "
+                "ONLY the context below. Cite sources inline using the exact source file name and chunk number from the context, e.g. (report.pdf, chunk 2). "
                 "If the context doesn't contain the answer, say so plainly.\n\n"
                 f"Context:\n{context_block}\n\nQuestion: {query}\n\nAnswer:"
             )
@@ -347,27 +347,36 @@ def process_uploaded_files(uploaded_files, api_key=None, provider="OpenAI"):
     status.success("Processing complete.")
 
 
+def get_server_key():
+    """Returns (provider, key) for the first provider whose key is configured
+    on the server (env var or Streamlit secrets), else (None, None)."""
+    for provider, cfg in PROVIDERS.items():
+        key = os.environ.get(cfg["env"])
+        if not key:
+            try:
+                key = st.secrets.get(cfg["env"])
+            except Exception:
+                key = None
+        if key:
+            return provider, key
+    return None, None
+
+
 def render_sidebar():
     st.sidebar.title("MedRAG")
     st.sidebar.caption("Clinical document Q&A")
 
-    st.sidebar.subheader("Generation (optional)")
-    provider = st.sidebar.selectbox("Provider", list(PROVIDERS))
-    env_name = PROVIDERS[provider]["env"]
-    env_key = os.environ.get(env_name)
-    if not env_key:
-        try:
-            env_key = st.secrets.get(env_name)
-        except Exception:
-            env_key = None
-    typed_key = st.sidebar.text_input(
-        f"{provider} API key",
-        type="password",
-        help=f"Add a key for AI-generated answers and document summaries, or set {env_name}. Leave blank to use free local retrieval-only mode.",
-    )
-    api_key = typed_key or env_key
-    if api_key and not typed_key:
-        st.sidebar.caption(f"Using {env_name} from the environment.")
+    server_provider, api_key = get_server_key()
+    if server_provider:
+        provider = server_provider
+    else:
+        st.sidebar.subheader("Generation (optional)")
+        provider = st.sidebar.selectbox("Provider", list(PROVIDERS))
+        api_key = st.sidebar.text_input(
+            f"{provider} API key",
+            type="password",
+            help=f"Add a key for AI-generated answers and document summaries, or set {PROVIDERS[provider]['env']} on the server. Leave blank to use free local retrieval-only mode.",
+        )
 
     uploaded_files = st.sidebar.file_uploader(
         "Upload clinical PDFs",

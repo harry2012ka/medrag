@@ -27,6 +27,7 @@ MedRAG lets you upload one or more PDFs, then ask questions in a chat interface.
 - Ask questions in natural language, get answers in a persistent chat thread
 - Works completely free and offline-capable by default — no API key required
 - Optionally add an OpenAI or Claude key (sidebar, or `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` env vars) for more fluent, synthesized answers (`gpt-4o-mini` or `claude-haiku-4-5`)
+- To hide the key box for visitors, set `OPENAI_API_KEY` (or `ANTHROPIC_API_KEY`) on the server — the app then uses it automatically and users only see upload and chat. Set a spend limit on the key in your provider dashboard first.
 - Every response is cited down to the source document and chunk
 - Handles messy real-world PDFs (encrypted, scanned/image-only, empty) without crashing — errors surface clearly in the sidebar instead
 
