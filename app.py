@@ -153,8 +153,8 @@ def get_server_key():
 def render_citations(citations):
     if not citations:
         return
-    st.markdown("".join(f'<span class="medrag-citation">{html.escape(rag.citation_label(c))}</span>'
-                        for c in citations), unsafe_allow_html=True)
+    st.markdown("".join(f'<span class="medrag-citation">{html.escape(label)}</span>'
+                        for label in rag.unique_labels(citations)), unsafe_allow_html=True)
     with st.expander("Show the source passages"):
         for c in citations:
             st.markdown(f"**{rag.citation_label(c)}** · match {c.get('score', 0):.2f}\n\n> {c['text']}")

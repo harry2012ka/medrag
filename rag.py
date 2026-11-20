@@ -19,6 +19,8 @@ TOP_K = 4
 # Cosine similarity below this is treated as "not about your documents".
 # all-MiniLM-L6-v2 scores unrelated text around 0.0-0.2 and on-topic passages 0.35+.
 MIN_SCORE = 0.30
+# Also drop passages much weaker than the best match, so only the clearly relevant ones show.
+MAX_GAP_FROM_BEST = 0.12
 
 PROVIDERS = {
     "OpenAI": {"env": "OPENAI_API_KEY", "model": "gpt-4o-mini"},
@@ -181,7 +183,7 @@ def build_index(records, vecs):
     return index
 
 
-def search(index, model, query, records, top_k=TOP_K, min_score=MIN_SCORE):
+def search(index, model, query, records, top_k=TOP_K, min_score=MIN_SCORE, max_gap=MAX_GAP_FROM_BEST):
     """Top passages above the relevance cutoff, best first. [] means 'not in your documents'."""
     if index is None or index.ntotal == 0 or not query.strip():
         return []
@@ -192,6 +194,9 @@ def search(index, model, query, records, top_k=TOP_K, min_score=MIN_SCORE):
         if i < 0 or score < min_score:
             continue
         out.append({**records[i], "score": round(float(score), 3)})
+    if out:
+        best = max(r["score"] for r in out)
+        out = [r for r in out if r["score"] >= best - max_gap]
     return out
 
 
@@ -199,6 +204,17 @@ def search(index, model, query, records, top_k=TOP_K, min_score=MIN_SCORE):
 
 def citation_label(r):
     return f'{r["source"]} · p. {r["page"]}'
+
+
+def unique_labels(citations):
+    """One tag per file+page, in order of first appearance."""
+    seen, out = set(), []
+    for c in citations:
+        label = citation_label(c)
+        if label not in seen:
+            seen.add(label)
+            out.append(label)
+    return out
 
 
 def llm_complete(prompt, api_key, provider="OpenAI", history=None):

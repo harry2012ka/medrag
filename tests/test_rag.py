@@ -160,5 +160,21 @@ class TestSummary(unittest.TestCase):
         self.assertEqual(covered, "all pages")
 
 
+
+class TestPolish(unittest.TestCase):
+    def test_weak_runner_ups_are_dropped(self):
+        class FixedIndex:
+            ntotal = 3
+            def search(self, q, k):
+                return [0.80, 0.75, 0.50], [0, 1, 2]
+        recs = [{"source": "a.pdf", "page": p, "chunk": p, "text": "t"} for p in (1, 2, 3)]
+        with mock.patch.object(rag, "embed_texts", return_value=np.ones((1, 4), dtype="float32")):
+            hits = rag.search(FixedIndex(), None, "q", recs)
+        self.assertEqual([h["page"] for h in hits], [1, 2])
+
+    def test_citation_tags_are_unique(self):
+        cites = [{"source": "a.pdf", "page": 1}, {"source": "a.pdf", "page": 1}, {"source": "a.pdf", "page": 2}]
+        self.assertEqual(rag.unique_labels(cites), ["a.pdf · p. 1", "a.pdf · p. 2"])
+
 if __name__ == "__main__":
     unittest.main()
