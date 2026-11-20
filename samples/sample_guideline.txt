@@ -1,0 +1,30 @@
+# Sample document written for the MedRAG demo. It paraphrases widely published guidance for illustration only; it is not an official clinical guideline.
+=== page 1 ===
+Hypertension Management Guidelines
+
+Hypertension is defined as a sustained systolic blood pressure of 130 mmHg or higher,
+or a diastolic blood pressure of 80 mmHg or higher, measured on at least two separate
+occasions. Lifestyle modification is recommended as first-line intervention for all
+patients, including sodium restriction, weight loss, regular aerobic exercise, and
+reduction in alcohol consumption.
+
+For patients who do not achieve target blood pressure through lifestyle changes alone,
+pharmacologic therapy should be initiated. First-line antihypertensive agents include
+thiazide diuretics, calcium channel blockers, and ACE inhibitors or angiotensin
+receptor blockers. Beta-blockers are generally reserved for patients with a compelling
+comorbid indication such as coronary artery disease or heart failure with reduced
+ejection fraction.
+=== page 2 ===
+Type 2 Diabetes Mellitus: Screening and Diagnosis
+
+Screening for type 2 diabetes is recommended for adults aged 35 to 70 who are
+overweight or obese. Diagnostic criteria include a fasting plasma glucose of 126 mg/dL
+or higher, a two-hour plasma glucose of 200 mg/dL or higher during an oral glucose
+tolerance test, a hemoglobin A1c of 6.5% or higher, or a random plasma glucose of
+200 mg/dL or higher in a patient with classic symptoms of hyperglycemia.
+
+Metformin remains the preferred initial pharmacologic agent for most patients with
+type 2 diabetes, given its efficacy, low hypoglycemia risk, and favorable cost profile.
+For patients with established cardiovascular disease or chronic kidney disease,
+consider a GLP-1 receptor agonist or SGLT2 inhibitor with demonstrated cardiovascular
+or renal benefit, independent of glycemic control.
