@@ -20,28 +20,35 @@ Clinical teams sit on huge piles of PDFs — protocols, guidelines, drug monogra
 
 ## What it does
 
-MedRAG lets you upload one or more PDFs, then ask questions in a chat interface. Every answer is grounded in the actual text of your documents and **cites the exact source file and chunk** it was pulled from — so you can always go verify the primary source yourself.
+Upload PDFs (or click **Try the sample document**), then ask questions in a chat. Every answer comes only from your documents and **cites the file and page number**, with the exact quoted passage one click away, so you can check it yourself.
 
-- Upload multiple PDFs at once; watch them get processed in real time
-- Automatically summarizes each document as soon as it's indexed — with an OpenAI key, the summary includes general lifestyle considerations and always closes with a reminder to consult a physician before acting on it
-- Ask questions in natural language, get answers in a persistent chat thread
-- Works completely free and offline-capable by default — no API key required
-- Optionally add an OpenAI or Claude key (sidebar, or `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` env vars) for more fluent, synthesized answers (`gpt-4o-mini` or `claude-haiku-4-5`)
-- To hide the key box for visitors, set `OPENAI_API_KEY` (or `ANTHROPIC_API_KEY`) on the server — the app then uses it automatically and users only see upload and chat. Set a spend limit on the key in your provider dashboard first.
-- Every response is cited down to the source document and chunk
-- Handles messy real-world PDFs (encrypted, scanned/image-only, empty) without crashing — errors surface clearly in the sidebar instead
+- **Page-level citations.** Each passage is tied to one page. With AI answers on, only the passages the answer actually used are cited.
+- **Says "I don't know."** If nothing in your documents is relevant enough, it tells you instead of guessing. It never answers clinical questions from outside your sources.
+- **Free by default.** With no API key, it shows the exact relevant passages (nothing leaves the server). Add an OpenAI or Claude key for written answers and per-document summaries.
+- **Follow-up questions** work when AI answers are on.
+- **Safe with messy files.** Encrypted, scanned, empty or corrupted PDFs show a clear message in the sidebar instead of crashing. Removing a file from the uploader removes it from search.
+- **Privacy notice built in.** The app tells users not to upload identifiable patient information and when passages are sent to an AI provider.
+- **Demo-safe server key.** If you set a key on the server, each visitor gets a limited number of AI answers (`MEDRAG_MAX_AI_ANSWERS`, default 15), then falls back to free mode.
 
-**MedRAG is a reference support tool only. It is not a substitute for clinical judgment**, and this disclaimer is shown persistently in the app itself.
+**MedRAG is a reference support tool for clinicians. It is not a substitute for clinical judgment**, and the app says so on every screen.
+
+## How it works
+
+1. **Read** each PDF page by page (pypdf).
+2. **Split** each page into passages at sentence boundaries (~800 characters, one sentence of overlap). Passages never cross pages, so every one has a page number.
+3. **Embed** passages locally with `all-MiniLM-L6-v2` and search by cosine similarity (FAISS when installed, numpy otherwise).
+4. **Filter** out weak matches (similarity below 0.30) so off-topic questions get "not in your documents".
+5. **Answer**: free mode quotes the passages; AI mode writes an answer that must cite numbered passages, and only those are shown as sources.
 
 ## Tech stack
 
 | Layer | Choice | Why |
 |---|---|---|
 | UI | [Streamlit](https://streamlit.io) | Fast to build, fast to run, no frontend build step |
-| PDF extraction | PyPDF2 | Simple, dependency-light text extraction |
+| PDF extraction | pypdf | Page-by-page text extraction, maintained successor to PyPDF2 |
 | Embeddings | [sentence-transformers](https://www.sbert.net/) (`all-MiniLM-L6-v2`) | Free, local, no API key, fast enough for interactive use |
-| Vector search | [FAISS](https://github.com/facebookresearch/faiss) (in-memory flat L2) | Simple, exact nearest-neighbor search, no external service |
-| Generation | OpenAI `gpt-4o-mini` (optional) | Only used if you supply a key; otherwise the app returns the top retrieved passages directly |
+| Vector search | [FAISS](https://github.com/facebookresearch/faiss) (cosine, in-memory) with a numpy fallback | Exact search, no external service |
+| Generation | OpenAI `gpt-4o-mini` or Claude `claude-haiku-4-5` (optional) | Only used with a key; otherwise the app returns the relevant passages directly |
 
 ## Quickstart
 
@@ -54,7 +61,8 @@ This creates a virtual environment, installs dependencies, and launches the app 
 To test the retrieval pipeline on its own (no Streamlit, no PDFs needed):
 
 ```bash
-python demo.py
+python demo.py          # needs the embedding model
+pytest -q tests         # offline tests, no model download needed
 ```
 
 To deploy to a fresh GitHub repo:
@@ -66,8 +74,11 @@ To deploy to a fresh GitHub repo:
 ## Project layout
 
 ```
-app.py           Streamlit app (UI + RAG pipeline)
+app.py           Streamlit UI
+rag.py           Extraction, chunking, search, answers (no Streamlit)
 demo.py          Standalone pipeline smoke test
+samples/         Sample document for the one-click demo
+tests/           Offline tests (run in GitHub Actions)
 requirements.txt Python dependencies
 run.sh           venv setup + launch
 deploy.sh        git init + GitHub repo creation + push

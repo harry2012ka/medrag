@@ -1,356 +1,142 @@
-"""MedRAG — Streamlit RAG app for clinical PDF Q&A."""
+"""MedRAG — Streamlit UI for clinical PDF Q&A. All RAG logic lives in rag.py."""
 
-import io
+import html
 import os
-import re
 
-import faiss
 import numpy as np
 import streamlit as st
-from PyPDF2 import PdfReader
-from sentence_transformers import SentenceTransformer
 
-EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
-CHUNK_SIZE = 800
-CHUNK_OVERLAP = 150
-TOP_K = 4
+import rag
 
-PROVIDERS = {
-    "OpenAI": {"env": "OPENAI_API_KEY", "model": "gpt-4o-mini"},
-    "Claude": {"env": "ANTHROPIC_API_KEY", "model": "claude-haiku-4-5-20251001"},
-}
-
-# ---------------------------------------------------------------------------
-# Core RAG functions (no Streamlit dependency — reused by demo.py)
-# ---------------------------------------------------------------------------
-
-
-def load_embedding_model():
-    return SentenceTransformer(EMBEDDING_MODEL_NAME)
-
-
-def chunk_text(text, chunk_size=CHUNK_SIZE, overlap=CHUNK_OVERLAP):
-    text = re.sub(r"\s+", " ", text).strip()
-    if not text:
-        return []
-    chunks = []
-    start = 0
-    length = len(text)
-    while start < length:
-        end = min(start + chunk_size, length)
-        piece = text[start:end].strip()
-        if piece:
-            chunks.append(piece)
-        if end == length:
-            break
-        start = end - overlap
-    return chunks
-
-
-def extract_pdf_text(file_bytes, filename):
-    """Returns (text, error_message). error_message is None on success."""
-    try:
-        reader = PdfReader(io.BytesIO(file_bytes))
-    except Exception as e:
-        return "", f"Could not read '{filename}' — the file may be corrupted ({e})."
-
-    if reader.is_encrypted:
-        try:
-            result = reader.decrypt("")
-        except Exception:
-            result = 0
-        if not result:
-            return "", f"'{filename}' is password-protected and could not be opened."
-
-    text_parts = []
-    for page in reader.pages:
-        try:
-            text_parts.append(page.extract_text() or "")
-        except Exception:
-            text_parts.append("")
-    text = "\n".join(text_parts).strip()
-
-    if not text:
-        return "", (
-            f"'{filename}' has no extractable text — it may be a scanned/"
-            "image-only PDF. Try running it through OCR first."
-        )
-    return text, None
-
-
-def _embedding_dim(model):
-    if hasattr(model, "get_embedding_dimension"):
-        return model.get_embedding_dimension()
-    return model.get_sentence_embedding_dimension()
-
-
-def embed_chunks(model, chunks):
-    if not chunks:
-        return np.zeros((0, _embedding_dim(model)), dtype="float32")
-    embeddings = model.encode(chunks, convert_to_numpy=True, show_progress_bar=False)
-    return embeddings.astype("float32")
-
-
-def build_faiss_index(dim):
-    return faiss.IndexFlatL2(dim)
-
-
-def search_index(index, model, query, chunk_records, top_k=TOP_K):
-    if index is None or index.ntotal == 0:
-        return []
-    query_vec = model.encode([query], convert_to_numpy=True).astype("float32")
-    k = min(top_k, index.ntotal)
-    distances, indices = index.search(query_vec, k)
-    results = []
-    for dist, idx in zip(distances[0], indices[0]):
-        if idx == -1:
-            continue
-        record = chunk_records[idx]
-        results.append({**record, "distance": float(dist)})
-    return results
-
-
-def llm_complete(prompt, api_key, provider="OpenAI"):
-    """Single-turn completion via the chosen provider. Raises on failure."""
-    model = PROVIDERS[provider]["model"]
-    if provider == "Claude":
-        from anthropic import Anthropic
-
-        response = Anthropic(api_key=api_key).messages.create(
-            model=model,
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        return "".join(b.text for b in response.content if b.type == "text").strip()
-
-    from openai import OpenAI
-
-    response = OpenAI(api_key=api_key).chat.completions.create(
-        model=model,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.2,
-    )
-    return response.choices[0].message.content.strip()
-
-
-def summarize_document(text, filename, api_key=None, provider="OpenAI"):
-    if api_key:
-        try:
-            truncated = text[:12000]
-            prompt = (
-                "Summarize the following clinical document in 3-5 concise bullet points. "
-                "Stick strictly to facts present in the text — do not add outside "
-                "information.\n\n"
-                "Then add a 'General lifestyle considerations' section with a few general, "
-                "non-prescriptive lifestyle suggestions that relate to the document's "
-                "topic (e.g. diet, exercise, monitoring habits) — keep these general, not "
-                "individualized medical advice.\n\n"
-                "End with this exact line on its own: '⚠️ This summary is for reference "
-                "only. Please consult your physician before making any changes based on "
-                "this information.'\n\n"
-                f"Document:\n{truncated}"
-            )
-            return llm_complete(prompt, api_key, provider)
-        except Exception as e:
-            return f"_(Summary generation failed: {e})_"
-
-    preview = text[:400].strip()
-    return (
-        "_(Add an OpenAI or Claude key in the sidebar for an automatic AI summary with lifestyle "
-        f"suggestions. Showing a preview of the document instead:)_\n\n{preview}...\n\n"
-        "⚠️ This is a raw excerpt, not a summary. Please consult your physician before "
-        "making any changes based on this information."
-    )
-
-
-def _fallback_answer(retrieved):
-    parts = [
-        f"**From {r['source']} (chunk {r['chunk_index']}):**\n{r['text']}"
-        for r in retrieved
-    ]
-    return "\n\n---\n\n".join(parts)
-
-
-def generate_answer(query, retrieved, api_key=None, provider="OpenAI"):
-    """Returns (answer_text, citations)."""
-    if not retrieved:
-        return "I couldn't find anything relevant in the uploaded documents.", []
-
-    citations = [
-        {"source": r["source"], "chunk_index": r["chunk_index"]} for r in retrieved
-    ]
-
-    if api_key:
-        try:
-            context_block = "\n\n".join(
-                f"[Source: {r['source']}, chunk {r['chunk_index']}]\n{r['text']}"
-                for r in retrieved
-            )
-            prompt = (
-                "You are a clinical reference assistant. Answer the question using "
-                "ONLY the context below. Cite sources inline using the exact source file name and chunk number from the context, e.g. (report.pdf, chunk 2). "
-                "If the context doesn't contain the answer, say so plainly.\n\n"
-                f"Context:\n{context_block}\n\nQuestion: {query}\n\nAnswer:"
-            )
-            return llm_complete(prompt, api_key, provider), citations
-        except Exception as e:
-            fallback = _fallback_answer(retrieved)
-            return (
-                f"_({provider} generation failed: {e}. Showing retrieved passages instead.)_"
-                f"\n\n{fallback}",
-                citations,
-            )
-
-    return _fallback_answer(retrieved), citations
-
-
-# ---------------------------------------------------------------------------
-# Streamlit UI
-# ---------------------------------------------------------------------------
+SAMPLE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "samples", "sample_guideline.txt")
+SAMPLE_NAME = "sample-guideline (demo)"
+SAMPLE_QUESTIONS = [
+    "What blood pressure counts as hypertension?",
+    "What is the preferred first medication for type 2 diabetes?",
+    "When are beta-blockers used for high blood pressure?",
+]
+# AI answers per visitor session when the app uses the server's own key
+SERVER_KEY_LIMIT = int(os.environ.get("MEDRAG_MAX_AI_ANSWERS", "15"))
 
 CUSTOM_CSS = """
 <style>
-:root {
-    --medrag-accent: #0f766e;
-    --medrag-accent-light: #ccfbf1;
-}
-.stApp {
-    background-color: #f8fafc;
-}
-section[data-testid="stSidebar"] {
-    background-color: #ecfeff;
-    border-right: 1px solid #99f6e4;
-}
-h1, h2, h3 {
-    color: #115e59;
-}
-.medrag-disclaimer {
-    background-color: #fffbeb;
-    border: 1px solid #fde68a;
-    color: #92400e;
-    padding: 0.75rem 1rem;
-    border-radius: 0.5rem;
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-}
-.medrag-citation {
-    background-color: var(--medrag-accent-light);
-    color: #115e59;
-    border-radius: 0.4rem;
-    padding: 0.15rem 0.5rem;
-    font-size: 0.8rem;
-    margin-right: 0.3rem;
-    display: inline-block;
-}
-div[data-testid="stChatMessage"] {
-    background-color: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 0.6rem;
-}
+.stApp { background-color: #f8fafc; }
+section[data-testid="stSidebar"] { background-color: #ecfeff; border-right: 1px solid #99f6e4; }
+h1, h2, h3 { color: #115e59; }
+.medrag-note { background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:.7rem 1rem;
+  border-radius:.5rem; font-size:.9rem; margin-bottom:.6rem; }
+.medrag-citation { background:#ccfbf1; color:#115e59; border-radius:.4rem; padding:.15rem .5rem;
+  font-size:.8rem; margin-right:.3rem; display:inline-block; }
+div[data-testid="stChatMessage"] { background:#fff; border:1px solid #e2e8f0; border-radius:.6rem; }
 </style>
 """
 
 
-@st.cache_resource(show_spinner=False)
+# ── Model ─────────────────────────────────────────────────────────────────────
+
+@st.cache_resource(show_spinner="Loading the search model (first run only)…")
 def get_embedding_model():
-    return load_embedding_model()
+    return rag.load_embedding_model()
 
 
-def _citation_label(c):
-    if c["chunk_index"] == "summary":
-        return f'{c["source"]} · full document'
-    return f'{c["source"]} · chunk {c["chunk_index"]}'
+def model_or_stop():
+    try:
+        return get_embedding_model()
+    except Exception as e:
+        st.error(f"The search model couldn't load ({e}). Refresh the page in a minute; if it keeps "
+                 "happening, the server can't reach Hugging Face or is out of memory.")
+        st.stop()
 
 
-def _render_citations(citations):
-    tags = "".join(
-        f'<span class="medrag-citation">{_citation_label(c)}</span>' for c in citations
-    )
-    st.markdown(tags, unsafe_allow_html=True)
+# ── Documents ─────────────────────────────────────────────────────────────────
+
+def init_state():
+    defaults = {"docs": {}, "index": None, "records": [], "errors": {}, "messages": [], "ai_used": 0}
+    for k, v in defaults.items():
+        st.session_state.setdefault(k, v)
 
 
-def init_session_state():
-    defaults = {
-        "documents": {},  # filename -> chunk count
-        "chunk_records": [],  # list of {source, chunk_index, text}
-        "index": None,
-        "dim": None,
-        "processed_keys": set(),
-        "errors": [],
-        "messages": [],
-    }
-    for key, value in defaults.items():
-        if key not in st.session_state:
-            st.session_state[key] = value
+def _display_name(filename, doc_key):
+    taken = {d["name"] for k, d in st.session_state.docs.items() if k != doc_key}
+    name, n = filename, 2
+    while name in taken:
+        name = f"{filename} ({n})"
+        n += 1
+    return name
 
 
-def reset_documents():
-    st.session_state.documents = {}
-    st.session_state.chunk_records = []
-    st.session_state.index = None
-    st.session_state.dim = None
-    st.session_state.processed_keys = set()
-    st.session_state.errors = []
+def rebuild_index():
+    records, vecs = [], []
+    for d in st.session_state.docs.values():
+        records.extend(d["records"])
+        vecs.append(d["vecs"])
+    st.session_state.records = records
+    st.session_state.index = rag.build_index(records, np.vstack(vecs)) if records else None
 
 
-def process_uploaded_files(uploaded_files, api_key=None, provider="OpenAI"):
-    new_files = [
-        f for f in uploaded_files if (f.name, f.size) not in st.session_state.processed_keys
-    ]
-    if not new_files:
+def add_document(doc_key, filename, pages, api_key, provider):
+    model = model_or_stop()
+    name = _display_name(filename, doc_key)
+    chunks = rag.chunk_pages(pages)
+    if not chunks:
+        st.session_state.errors[doc_key] = f"'{filename}' produced no usable text."
         return
+    vecs = rag.embed_texts(model, [c["text"] for c in chunks])
+    records = [{"source": name, "page": c["page"], "chunk": i, "text": c["text"]} for i, c in enumerate(chunks)]
+    st.session_state.docs[doc_key] = {"name": name, "pages": len(pages), "chunks": len(chunks),
+                                      "records": records, "vecs": vecs}
+    summary, covered = rag.summarize_pages(pages, name, api_key=api_key, provider=provider)
+    st.session_state.messages.append({"role": "assistant", "content": f"**Summary of {name}** ({covered})\n\n{summary}",
+                                      "citations": [], "summary": True})
 
-    status = st.sidebar.empty()
-    progress_bar = st.sidebar.progress(0)
-    status.info("Processing...")
 
-    model = get_embedding_model()
+def sync_uploads(uploaded_files, api_key, provider):
+    """Index new files, drop files removed from the uploader. Bad files never crash the app."""
+    current = {}
+    for f in uploaded_files or []:
+        data = f.getvalue()
+        current[rag.doc_id(data)] = (f.name, data)
 
-    for i, f in enumerate(new_files):
-        try:
-            file_bytes = f.read()
-            text, error = extract_pdf_text(file_bytes, f.name)
-            if error:
-                st.session_state.errors.append(error)
-            else:
-                chunks = chunk_text(text)
-                if not chunks:
-                    st.session_state.errors.append(
-                        f"'{f.name}' produced no usable text chunks."
-                    )
+    removed = [k for k in st.session_state.docs if k not in current and k != "sample"]
+    for k in removed:
+        st.session_state.docs.pop(k)
+    for k in [k for k in st.session_state.errors if k not in current]:
+        st.session_state.errors.pop(k)
+
+    new = [(k, v) for k, v in current.items() if k not in st.session_state.docs and k not in st.session_state.errors]
+    if new:
+        bar = st.sidebar.progress(0.0, text="Reading documents…")
+        for i, (k, (name, data)) in enumerate(new):
+            try:
+                pages, err = rag.extract_pdf_pages(data, name)
+                if err:
+                    st.session_state.errors[k] = err
                 else:
-                    embeddings = embed_chunks(model, chunks)
-                    if st.session_state.index is None:
-                        st.session_state.dim = embeddings.shape[1]
-                        st.session_state.index = build_faiss_index(st.session_state.dim)
-                    st.session_state.index.add(embeddings)
-                    for ci, chunk in enumerate(chunks):
-                        st.session_state.chunk_records.append(
-                            {"source": f.name, "chunk_index": ci, "text": chunk}
-                        )
-                    st.session_state.documents[f.name] = len(chunks)
+                    add_document(k, name, pages, api_key, provider)
+            except Exception as e:
+                st.session_state.errors[k] = f"Unexpected error reading '{name}': {e}"
+            bar.progress((i + 1) / len(new), text=f"Indexed {i + 1} of {len(new)}")
+        bar.empty()
+    if removed or new:
+        rebuild_index()
 
-                    summary = summarize_document(text, f.name, api_key=api_key, provider=provider)
-                    st.session_state.messages.append(
-                        {
-                            "role": "assistant",
-                            "content": f"**Summary of {f.name}:**\n\n{summary}",
-                            "citations": [{"source": f.name, "chunk_index": "summary"}],
-                        }
-                    )
-        except Exception as e:
-            st.session_state.errors.append(f"Unexpected error processing '{f.name}': {e}")
-        finally:
-            st.session_state.processed_keys.add((f.name, f.size))
-            progress_bar.progress((i + 1) / len(new_files))
 
-    status.success("Processing complete.")
+def load_sample(api_key, provider):
+    if "sample" in st.session_state.docs:
+        return
+    raw = open(SAMPLE_PATH, encoding="utf-8").read()
+    pages = []
+    for block in raw.split("=== page ")[1:]:
+        number, _, text = block.partition("===")
+        pages.append((int(number.strip()), " ".join(text.split())))
+    add_document("sample", SAMPLE_NAME, pages, api_key, provider)
+    rebuild_index()
 
+
+# ── Keys ──────────────────────────────────────────────────────────────────────
 
 def get_server_key():
-    """Returns (provider, key) for the first provider whose key is configured
-    on the server (env var or Streamlit secrets), else (None, None)."""
-    for provider, cfg in PROVIDERS.items():
+    for provider, cfg in rag.PROVIDERS.items():
         key = os.environ.get(cfg["env"])
         if not key:
             try:
@@ -362,112 +148,135 @@ def get_server_key():
     return None, None
 
 
+# ── UI ────────────────────────────────────────────────────────────────────────
+
+def render_citations(citations):
+    if not citations:
+        return
+    st.markdown("".join(f'<span class="medrag-citation">{html.escape(rag.citation_label(c))}</span>'
+                        for c in citations), unsafe_allow_html=True)
+    with st.expander("Show the source passages"):
+        for c in citations:
+            st.markdown(f"**{rag.citation_label(c)}** · match {c.get('score', 0):.2f}\n\n> {c['text']}")
+
+
 def render_sidebar():
     st.sidebar.title("MedRAG")
-    st.sidebar.caption("Clinical document Q&A")
+    st.sidebar.caption("Ask your clinical documents a question.")
 
-    server_provider, api_key = get_server_key()
+    server_provider, server_key = get_server_key()
     if server_provider:
-        provider = server_provider
+        provider, api_key, using_server_key = server_provider, server_key, True
     else:
-        st.sidebar.subheader("Generation (optional)")
-        provider = st.sidebar.selectbox("Provider", list(PROVIDERS))
-        api_key = st.sidebar.text_input(
-            f"{provider} API key",
-            type="password",
-            help=f"Add a key for AI-generated answers and document summaries, or set {PROVIDERS[provider]['env']} on the server. Leave blank to use free local retrieval-only mode.",
-        )
+        st.sidebar.subheader("AI answers (optional)")
+        provider = st.sidebar.selectbox("Provider", list(rag.PROVIDERS))
+        api_key = st.sidebar.text_input(f"{provider} API key", type="password",
+                                        help="Leave blank for free local mode: you get the exact passages, no AI writing.")
+        using_server_key = False
 
-    uploaded_files = st.sidebar.file_uploader(
-        "Upload clinical PDFs",
-        type=["pdf"],
-        accept_multiple_files=True,
-    )
-    if uploaded_files:
-        process_uploaded_files(uploaded_files, api_key=api_key or None, provider=provider)
+    uploaded = st.sidebar.file_uploader("Upload clinical PDFs", type=["pdf"], accept_multiple_files=True)
+    sync_uploads(uploaded, api_key or None, provider)
 
-    if st.session_state.errors:
-        for err in st.session_state.errors:
-            st.sidebar.error(err)
+    if st.sidebar.button("Try the sample document", use_container_width=True):
+        load_sample(api_key or None, provider)
+
+    for err in st.session_state.errors.values():
+        st.sidebar.error(err)
 
     st.sidebar.subheader("Indexed documents")
-    if st.session_state.documents:
-        for name, count in st.session_state.documents.items():
-            st.sidebar.write(f"📄 {name} — {count} chunks")
+    if st.session_state.docs:
+        for d in st.session_state.docs.values():
+            st.sidebar.write(f"📄 {d['name']}: {d['pages']} pages, {d['chunks']} passages")
     else:
-        st.sidebar.caption("No documents indexed yet.")
+        st.sidebar.caption("Nothing indexed yet.")
 
     st.sidebar.divider()
-    col1, col2 = st.sidebar.columns(2)
-    if col1.button("Clear chat", use_container_width=True):
+    c1, c2 = st.sidebar.columns(2)
+    if c1.button("Clear chat", use_container_width=True):
         st.session_state.messages = []
         st.rerun()
-    if col2.button("Reset all documents", use_container_width=True):
-        reset_documents()
+    if c2.button("Reset all", use_container_width=True):
+        for k in ("docs", "index", "records", "errors", "messages"):
+            st.session_state.pop(k, None)
         st.rerun()
 
-    return api_key, provider
+    if using_server_key and st.session_state.ai_used >= SERVER_KEY_LIMIT:
+        st.sidebar.info("AI answer limit for this demo reached. You'll still get the exact source passages.")
+        api_key = None
+    return api_key or None, provider, using_server_key
 
 
-def render_chat():
+def history_for_llm(limit=4):
+    """Last few question/answer pairs (oldest first, alternating, starting with a question)
+    so follow-up questions make sense. Excludes the question being asked right now."""
+    turns = [m for m in st.session_state.messages[:-1] if not m.get("summary")]
+    out = []
+    for m in turns:
+        if out and out[-1]["role"] == m["role"]:
+            out[-1] = {"role": m["role"], "content": m["content"]}
+        else:
+            out.append({"role": m["role"], "content": m["content"]})
+    out = out[-2 * limit:]
+    while out and out[0]["role"] != "user":
+        out.pop(0)
+    if out and out[-1]["role"] == "user":
+        out.pop()
+    return out
+
+
+def ask(query, api_key, provider, using_server_key):
+    st.session_state.messages.append({"role": "user", "content": query, "citations": []})
+    with st.chat_message("user"):
+        st.markdown(query)
+    with st.chat_message("assistant"):
+        if not st.session_state.docs:
+            answer, citations = "Upload a PDF or click **Try the sample document** in the sidebar first.", []
+        else:
+            with st.spinner("Searching your documents…"):
+                model = model_or_stop()
+                retrieved = rag.search(st.session_state.index, model, query, st.session_state.records)
+                answer, citations = rag.generate_answer(query, retrieved, api_key=api_key, provider=provider,
+                                                        history=history_for_llm() if api_key else None)
+                if api_key and retrieved and using_server_key:
+                    st.session_state.ai_used += 1
+        st.markdown(answer)
+        render_citations(citations)
+    st.session_state.messages.append({"role": "assistant", "content": answer, "citations": citations})
+
+
+def render_chat(api_key, provider, using_server_key):
     st.title("🩺 MedRAG")
     st.markdown(
-        '<div class="medrag-disclaimer">⚠️ This tool provides reference support only '
-        "and is not a substitute for clinical judgment. Always verify against primary "
-        "sources and use professional discretion.</div>",
+        '<div class="medrag-note">⚠️ Reference support for clinicians, not a substitute for clinical judgment. '
+        "Answers come only from your documents; always check the cited page.</div>"
+        '<div class="medrag-note">🔒 Don\'t upload documents containing patient names or other identifying '
+        "information. With AI answers on, the relevant passages are sent to "
+        f"{html.escape(provider)} to write the answer. In free mode nothing leaves this server.</div>",
         unsafe_allow_html=True,
     )
 
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
-            if msg.get("citations"):
-                _render_citations(msg["citations"])
+            render_citations(msg.get("citations"))
 
-    query = st.chat_input("Ask a question about the uploaded documents...")
-    if not query:
-        return
+    if "sample" in st.session_state.docs:
+        cols = st.columns(len(SAMPLE_QUESTIONS))
+        for col, q in zip(cols, SAMPLE_QUESTIONS):
+            if col.button(q, use_container_width=True):
+                st.session_state["pending_question"] = q
 
-    st.session_state.messages.append({"role": "user", "content": query, "citations": []})
-    with st.chat_message("user"):
-        st.markdown(query)
-
-    with st.chat_message("assistant"):
-        if not st.session_state.documents:
-            answer = "Please upload at least one PDF in the sidebar before asking questions."
-            citations = []
-            st.markdown(answer)
-        else:
-            with st.spinner("Searching documents..."):
-                model = get_embedding_model()
-                retrieved = search_index(
-                    st.session_state.index, model, query, st.session_state.chunk_records
-                )
-                answer, citations = generate_answer(
-                    query,
-                    retrieved,
-                    api_key=st.session_state.get("api_key"),
-                    provider=st.session_state.get("provider", "OpenAI"),
-                )
-            st.markdown(answer)
-            if citations:
-                _render_citations(citations)
-
-    st.session_state.messages.append(
-        {"role": "assistant", "content": answer, "citations": citations}
-    )
+    query = st.chat_input("Ask a question about your documents…") or st.session_state.pop("pending_question", None)
+    if query:
+        ask(query, api_key, provider, using_server_key)
 
 
 def main():
     st.set_page_config(page_title="MedRAG", page_icon="🩺", layout="wide")
     st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
-    init_session_state()
-
-    api_key, provider = render_sidebar()
-    st.session_state["api_key"] = api_key or None
-    st.session_state["provider"] = provider
-
-    render_chat()
+    init_state()
+    api_key, provider, using_server_key = render_sidebar()
+    render_chat(api_key, provider, using_server_key)
 
 
 if __name__ == "__main__":
