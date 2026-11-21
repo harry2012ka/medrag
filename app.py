@@ -3,6 +3,8 @@
 import datetime
 import html
 import os
+import threading
+import time
 
 import numpy as np
 import streamlit as st
@@ -16,8 +18,11 @@ SAMPLE_QUESTIONS = [
     "What is the preferred first medication for type 2 diabetes?",
     "When are beta-blockers used for high blood pressure?",
 ]
-# AI answers per visitor session when the app uses the server's own key
-SERVER_KEY_LIMIT = int(os.environ.get("MEDRAG_MAX_AI_ANSWERS", "15"))
+# Limits on AI calls made with the server's own key (answers and summaries both count).
+SERVER_KEY_LIMIT = int(os.environ.get("MEDRAG_MAX_AI_ANSWERS", "15"))          # per browser session
+PER_IP_DAILY_LIMIT = int(os.environ.get("MEDRAG_MAX_AI_PER_IP_DAY", "40"))     # survives page refreshes
+GLOBAL_HOURLY_LIMIT = int(os.environ.get("MEDRAG_MAX_AI_PER_HOUR", "200"))     # whole server
+MAX_DOCS_PER_SESSION = int(os.environ.get("MEDRAG_MAX_DOCS", "10"))
 
 CUSTOM_CSS = """
 <style>
@@ -31,6 +36,46 @@ h1, h2, h3 { color: #115e59; }
 div[data-testid="stChatMessage"] { background:#fff; border:1px solid #e2e8f0; border-radius:.6rem; }
 </style>
 """
+
+
+# ── Server-wide AI budget ──────────────────────────────────────────────────────
+
+@st.cache_resource
+def _budget():
+    """Shared across all visitors of this server process."""
+    return {"lock": threading.Lock(), "ip_day": {}, "hour": {}}
+
+
+def _client_ip():
+    try:
+        forwarded = st.context.headers.get("X-Forwarded-For", "")
+        return forwarded.split(",")[0].strip() or st.context.headers.get("Host", "unknown")
+    except Exception:
+        return "unknown"
+
+
+def server_ai_allowed():
+    """True if the server key may be used for one more AI call by this visitor."""
+    if st.session_state.ai_used >= SERVER_KEY_LIMIT:
+        return False
+    b, now = _budget(), time.time()
+    day, hour, ip = int(now // 86400), int(now // 3600), _client_ip()
+    with b["lock"]:
+        return (b["ip_day"].get((ip, day), 0) < PER_IP_DAILY_LIMIT
+                and b["hour"].get(hour, 0) < GLOBAL_HOURLY_LIMIT)
+
+
+def record_server_ai_use():
+    st.session_state.ai_used += 1
+    b, now = _budget(), time.time()
+    day, hour, ip = int(now // 86400), int(now // 3600), _client_ip()
+    with b["lock"]:
+        b["ip_day"][(ip, day)] = b["ip_day"].get((ip, day), 0) + 1
+        b["hour"][hour] = b["hour"].get(hour, 0) + 1
+        for k in [k for k in b["ip_day"] if k[1] < day]:
+            b["ip_day"].pop(k)
+        for k in [k for k in b["hour"] if k < hour]:
+            b["hour"].pop(k)
 
 
 # ── Model ─────────────────────────────────────────────────────────────────────
@@ -76,7 +121,7 @@ def rebuild_index():
     st.session_state.index = rag.build_index(records, np.vstack(vecs)) if records else None
 
 
-def add_document(doc_key, filename, pages, api_key, provider):
+def add_document(doc_key, filename, pages, api_key, provider, using_server_key=False):
     model = model_or_stop()
     name = _display_name(filename, doc_key)
     chunks = rag.chunk_pages(pages)
@@ -90,12 +135,17 @@ def add_document(doc_key, filename, pages, api_key, provider):
     st.session_state.docs[doc_key] = {"name": name, "pages": len(pages), "chunks": len(chunks),
                                       "records": records, "vecs": vecs, "phi": phi,
                                       "names": sorted(rag.names_in(full_text))}
+    if api_key and using_server_key:
+        if server_ai_allowed():
+            record_server_ai_use()
+        else:
+            api_key = None
     summary, covered = rag.summarize_pages(pages, name, api_key=api_key, provider=provider)
     st.session_state.messages.append({"role": "assistant", "content": f"**Summary of {name}** ({covered})\n\n{summary}",
                                       "citations": [], "summary": True})
 
 
-def sync_uploads(uploaded_files, api_key, provider):
+def sync_uploads(uploaded_files, api_key, provider, using_server_key=False):
     """Index new files, drop files removed from the uploader. Bad files never crash the app."""
     current = {}
     for f in uploaded_files or []:
@@ -109,6 +159,10 @@ def sync_uploads(uploaded_files, api_key, provider):
         st.session_state.errors.pop(k)
 
     new = [(k, v) for k, v in current.items() if k not in st.session_state.docs and k not in st.session_state.errors]
+    room = MAX_DOCS_PER_SESSION - len([k for k in st.session_state.docs if k != "sample"])
+    for k, (name, _) in new[max(room, 0):]:
+        st.session_state.errors[k] = f"'{name}' wasn't added: this demo holds up to {MAX_DOCS_PER_SESSION} documents at a time."
+    new = new[:max(room, 0)]
     if new:
         bar = st.sidebar.progress(0.0, text="Reading documents…")
         for i, (k, (name, data)) in enumerate(new):
@@ -117,7 +171,7 @@ def sync_uploads(uploaded_files, api_key, provider):
                 if err:
                     st.session_state.errors[k] = err
                 else:
-                    add_document(k, name, pages, api_key, provider)
+                    add_document(k, name, pages, api_key, provider, using_server_key)
             except Exception as e:
                 st.session_state.errors[k] = f"Unexpected error reading '{name}': {e}"
             bar.progress((i + 1) / len(new), text=f"Indexed {i + 1} of {len(new)}")
@@ -126,7 +180,7 @@ def sync_uploads(uploaded_files, api_key, provider):
         rebuild_index()
 
 
-def load_sample(api_key, provider):
+def load_sample(api_key, provider, using_server_key=False):
     if "sample" in st.session_state.docs:
         return
     raw = open(SAMPLE_PATH, encoding="utf-8").read()
@@ -134,7 +188,7 @@ def load_sample(api_key, provider):
     for block in raw.split("=== page ")[1:]:
         number, _, text = block.partition("===")
         pages.append((int(number.strip()), " ".join(text.split())))
-    add_document("sample", SAMPLE_NAME, pages, api_key, provider)
+    add_document("sample", SAMPLE_NAME, pages, api_key, provider, using_server_key)
     rebuild_index()
 
 
@@ -162,7 +216,8 @@ def render_citations(citations):
                         for label in rag.unique_labels(citations)), unsafe_allow_html=True)
     with st.expander("Show the source passages"):
         for c in citations:
-            st.markdown(f"**{rag.citation_label(c)}** · match {c.get('similarity', c.get('score', 0)):.2f}\n\n> {c['text']}")
+            st.markdown(f"**{rag.md_escape(rag.citation_label(c))}** · match "
+                        f"{c.get('similarity', c.get('score', 0)):.2f}\n\n> {rag.md_escape(c['text'])}")
 
 
 def render_sidebar():
@@ -183,11 +238,15 @@ def render_sidebar():
                                         help="Leave blank for free local mode: you get the exact passages, no AI writing.")
         using_server_key = False
 
+    limit_hit = using_server_key and not server_ai_allowed()
+    if limit_hit:
+        api_key = None
+
     uploaded = st.sidebar.file_uploader("Upload clinical PDFs", type=["pdf"], accept_multiple_files=True)
-    sync_uploads(uploaded, api_key or None, provider)
+    sync_uploads(uploaded, api_key or None, provider, using_server_key)
 
     if st.sidebar.button("Try the sample document", use_container_width=True):
-        load_sample(api_key or None, provider)
+        load_sample(api_key or None, provider, using_server_key)
 
     for err in st.session_state.errors.values():
         st.sidebar.error(err)
@@ -218,9 +277,8 @@ def render_sidebar():
             st.session_state.pop(k, None)
         st.rerun()
 
-    if using_server_key and st.session_state.ai_used >= SERVER_KEY_LIMIT:
+    if limit_hit:
         st.sidebar.info("AI answer limit for this demo reached. You'll still get the exact source passages.")
-        api_key = None
     return api_key or None, provider, using_server_key
 
 
@@ -268,7 +326,12 @@ def ask(query, api_key, provider, using_server_key):
     with st.chat_message("user"):
         st.markdown(query)
     audience = st.session_state.get("audience", "clinician")
+    urgent = rag.emergency_notice(query)
+    if api_key and using_server_key and not server_ai_allowed():
+        api_key = None
     with st.chat_message("assistant"):
+        if urgent:
+            st.markdown(urgent)
         strength = ""
         if not st.session_state.docs:
             answer, citations = "Upload a PDF or click **Try the sample document** in the sidebar first.", []
@@ -281,11 +344,10 @@ def ask(query, api_key, provider, using_server_key):
                                                         audience=audience, known_names=known_names())
                 strength = rag.match_strength(citations)
                 if api_key and retrieved and using_server_key:
-                    st.session_state.ai_used += 1
-        urgent = rag.emergency_notice(query)
+                    record_server_ai_use()
+        st.markdown(answer)
         if urgent:
             answer = f"{urgent}\n\n{answer}"
-        st.markdown(answer)
         if strength:
             st.caption(strength)
         render_citations(citations)
