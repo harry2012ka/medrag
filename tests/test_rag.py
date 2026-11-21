@@ -178,3 +178,12 @@ class TestPolish(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_link_markers_shows_each_page_once():
+    from rag import link_markers
+    r = [{"source": "g", "page": 1}, {"source": "g", "page": 2}, {"source": "g", "page": 2}]
+    # two passages from the same page: one label, not "(g · p. 2)(g · p. 2)"
+    assert link_markers("Metformin is first [2][3].", r) == "Metformin is first (g · p. 2)."
+    assert link_markers("C [1, 3].", r) == "C (g · p. 1; g · p. 2)."
+    assert link_markers("X [2] [3]. Y [9].", r) == "X (g · p. 2). Y [9]."

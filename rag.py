@@ -252,11 +252,22 @@ def used_passages(answer, retrieved):
 
 
 def link_markers(answer, retrieved):
-    """Replace [n] markers with readable (file · p. N) labels."""
+    """
+    Replace [n] markers with readable (file · p. N) labels. A run like [2][3] becomes one
+    label group, and two passages from the same page are shown once, not "(p. 2)(p. 2)".
+    """
     def sub(m):
-        n = int(m.group(1))
-        return f"({citation_label(retrieved[n - 1])})" if 1 <= n <= len(retrieved) else m.group(0)
-    return re.sub(r"\[(\d+)\]", sub, answer)
+        labels = []
+        for n in (int(x) for x in re.findall(r"\d+", m.group(0))):
+            if not 1 <= n <= len(retrieved):
+                continue
+            label = citation_label(retrieved[n - 1])
+            if label not in labels:
+                labels.append(label)
+        return f"({'; '.join(labels)})" if labels else m.group(0)
+    linked = re.sub(r"(?:\[\d+(?:\s*,\s*\d+)*\]\s*)+", lambda m: sub(m) + (" " if m.group(0).endswith(" ") else ""), answer)
+    # the same label repeated back to back across separate runs, e.g. "(a) (a)"
+    return re.sub(r"(\([^()]+\))(\s*\1)+", r"\1", linked)
 
 
 def local_answer(retrieved):
