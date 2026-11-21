@@ -20,6 +20,9 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 
 COPY . .
 
+# run as an unprivileged user
+RUN useradd --create-home --uid 10001 app && chown -R app:app /app
+USER app
+
 EXPOSE 8080
-CMD streamlit run app.py --server.port=${PORT:-8080} --server.address=0.0.0.0 \
-    --server.headless=true --browser.gatherUsageStats=false
+CMD ["sh", "-c", "exec streamlit run app.py --server.port=${PORT:-8080} --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false"]

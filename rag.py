@@ -17,6 +17,8 @@ CHUNK_SIZE = 800          # target characters per chunk
 CHUNK_OVERLAP = 1         # sentences carried over between neighbouring chunks
 TOP_K = 4
 MAX_PAGES = 500           # longer PDFs are refused (memory and time on a small server)
+MAX_PAGE_CHARS = 20_000   # text kept per page (a normal dense page is ~3-6k characters)
+MAX_QUESTION_CHARS = 1000
 # Cosine similarity below this is treated as "not about your documents".
 # all-MiniLM-L6-v2 scores unrelated text around 0.0-0.2 and on-topic passages 0.35+.
 MIN_SCORE = 0.30
@@ -72,7 +74,7 @@ def extract_pdf_pages(file_bytes, filename):
             text = page.extract_text() or ""
         except Exception:
             text = ""
-        text = re.sub(r"\s+", " ", text).strip()
+        text = re.sub(r"\s+", " ", text).strip()[:MAX_PAGE_CHARS]
         if text:
             pages.append((number, text))
 
@@ -322,35 +324,40 @@ _TOLL_FREE = r"(?!(?:\+?1[\s.-]?)?\(?8(?:00|33|44|55|66|77|88)\)?)"
 
 _PHI_PATTERNS = [
     ("Social Security number", re.compile(
-        r"\b\d{3}-\d{2}-\d{4}\b|\b(?:SSN|SS#|social\s+security(?:\s+(?:no\.?|number|#))?)\s*[:#]?\s*\d{3}[\s.-]?\d{2}[\s.-]?\d{4}\b",
+        r"\b\d{3}-\d{2}-\d{4}\b|\b(?:SSN|SS#|social\s+security(?:\s+(?:no\.?|number|#))?)\s?[:#]?\s?\d{3}[\s.-]?\d{2}[\s.-]?\d{4}\b",
         re.I)),
     ("medical record number", re.compile(
         r"\b(?:MRN|MR\s*#|Med(?:ical)?\s+Rec(?:ord)?\s*(?:No\.?|Number|#)?|Acct\.?\s*(?:No\.?|#)?|Account\s*(?:No\.?|Number|#)|"
-        r"Chart\s*(?:No\.?|#)|Patient\s+ID|Encounter\s*(?:No\.?|#|ID))\s*[:#]?\s*[A-Z0-9][A-Z0-9-]{3,}", re.I)),
+        r"Chart\s*(?:No\.?|#)|Patient\s+ID|Encounter\s*(?:No\.?|#|ID))\s?[:#]?\s?[A-Z0-9][A-Z0-9-]{3,}", re.I)),
     ("date of birth", re.compile(
-        r"\b(?:DOB|D\.O\.B\.?|Date\s+of\s+Birth|Birth\s*date|born(?:\s+on)?)\s*[:#-]?\s*"
+        r"\b(?:DOB|D\.O\.B\.?|Date\s+of\s+Birth|Birth\s*date|born(?:\s+on)?)\s?[:#-]?\s?"
         r"(?:\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}|\d{4}-\d{2}-\d{2}|[A-Z][a-z]+\.?\s+\d{1,2},?\s+\d{4}|\d{1,2}\s+[A-Z][a-z]+\.?\s+\d{4})",
         re.I)),
     ("patient name", re.compile(
-        r"\b(?:Patient(?:'s)?\s+Name|Patient|PATIENT(?:\s+NAME)?|Pt\.?|Resident|Client)\s*:\s*"
+        r"\b(?:Patient(?:'s)?\s+Name|Patient|PATIENT(?:\s+NAME)?|Pt\.?|Resident|Client)\s?:\s?"
         r"(?:[A-Z][a-zA-Z'À-ſ-]+,\s*" + _NAME_PART + r"(?:\s+" + _NAME_PART + r")?"   # Last, First
         r"|" + _NAME_PART + r"(?:\s+[A-Z]\.)?(?:\s+" + _NAME_PART + r"){1,2})")),
     ("patient name", re.compile(r"\b(?:Mr|Mrs|Ms|Miss|Mx)\.?\s+" + _NAME_PART + r"(?:\s+" + _NAME_PART + r")?")),
     ("phone number", re.compile(
         r"(?<![\d-])" + _TOLL_FREE + r"(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]\d{4}(?![\d-])(?!\s*(?:mg|mcg|g|ml|mL|units?|%))"
         r"|(?<![\d-])\+(?:[2-9]\d{0,2})[\s.-]?\d{2,4}(?:[\s.-]?\d{2,4}){2,3}(?!\d)")),
-    ("email address", re.compile(r"\b[\w.+-]+@[\w-]+(?:\.[\w-]+)+\b")),
+    ("email address", re.compile(r"(?<![\w.+-])[\w+-][\w.+-]{0,63}@[\w-]{1,63}(?:\.[\w-]{1,63}){1,5}\b")),
     ("street address", re.compile(
         r"\b\d{1,6}\s+(?:[A-Z][a-z]+\s+){1,3}(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Dr|Drive|Ln|Lane|Ct|Court|Way|Pl|Place|"
         r"Ter|Terrace|Cir|Circle|Pkwy|Parkway|Hwy|Highway)\b\.?")),
 ]
 
 
+PHI_SCAN_CHARS = 200_000   # identifier scan looks at this much text per call (keeps it fast)
+MAX_NAMES = 200
+
+
 def find_phi(text):
     """{kind: count} of things that look like patient identifiers. Pattern-based: best effort."""
+    text = (text or "")[:PHI_SCAN_CHARS]
     found = {}
     for kind, pattern in _PHI_PATTERNS:
-        n = len(pattern.findall(text or ""))
+        n = len(pattern.findall(text))
         if n:
             found[kind] = found.get(kind, 0) + n
     return found
@@ -367,10 +374,12 @@ def names_in(text):
     for kind, pattern in _PHI_PATTERNS:
         if kind != "patient name":
             continue
-        for m in pattern.finditer(text or ""):
+        for m in pattern.finditer((text or "")[:PHI_SCAN_CHARS]):
             name = _NAME_LABEL.sub("", m.group(0)).strip()
             if name:
                 out.add(name)
+                if len(out) >= MAX_NAMES:
+                    return out
     return out
 
 
@@ -389,9 +398,10 @@ def redact_phi(text, known_names=()):
     names = set(known_names) | names_in(text)
     for kind, pattern in _PHI_PATTERNS:
         text = pattern.sub(f"[{kind} removed]", text)
-    parts = sorted({p for n in names for p in _name_parts(n)}, key=len, reverse=True)
-    for part in parts:
-        text = re.sub(r"\b" + re.escape(part) + r"\b", "[patient name removed]", text, flags=re.I)
+    parts = sorted({p for n in list(names)[:MAX_NAMES] for p in _name_parts(n)}, key=len, reverse=True)
+    if parts:
+        combined = re.compile(r"\b(?:" + "|".join(map(re.escape, parts)) + r")\b", re.I)
+        text = combined.sub("[patient name removed]", text)
     return re.sub(r"(\[patient name removed\])(?:[\s,.]*\[patient name removed\])+", r"\1", text)
 
 
@@ -547,10 +557,16 @@ _MED_CHANGE = re.compile(r"\b(stop|start|skip|double|halve|increase|decrease|red
 
 
 def clean_markdown(text):
-    """Remove images and links (they can leak data or phish), keep link text."""
-    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", text)
-    text = re.sub(r"\[([^\]]+)\]\((?:https?:|www\.|//|mailto:|data:)[^)]*\)", r"\1", text)
-    return re.sub(r"<(?:https?|data|mailto):[^>]*>", "", text)
+    """
+    Make AI text safe to render: no images, links, reference definitions, raw HTML or
+    clickable URLs (a poisoned document could otherwise make the browser load an image
+    whose URL carries document text). Keeps bold, lists and line breaks.
+    Run AFTER link_markers, since it escapes square brackets.
+    """
+    text = re.sub(r"(?m)^\s{0,3}\[[^\]\n]+\]:.*$", "", text)          # reference-style link definitions
+    text = re.sub(r"([\[\]!<>`\\])", r"\\\1", text)                     # images, links, HTML, code tricks
+    text = re.sub(r"(?i)\b(https?|ftp|data|mailto|javascript):(//)?", lambda m: m.group(1) + ":\u200b" + (m.group(2) or ""), text)
+    return re.sub(r"(?i)\bwww\.", "www\u200b.", text)
 
 
 def md_escape(text):
@@ -614,7 +630,8 @@ def generate_answer(query, retrieved, api_key=None, provider="OpenAI", history=N
     names = set(known_names)
     for r in retrieved:
         names |= names_in(r["text"])
-    history = [{**m, "content": redact_phi(m["content"], names)} for m in (history or [])]
+    history = [{**m, "content": redact_phi(m["content"][:2000], names)} for m in (history or [])]
+    query = query[:MAX_QUESTION_CHARS]
     try:
         raw = llm_complete(answer_prompt(query, retrieved, audience, names), api_key, provider,
                            history=history, system=system_prompt(audience))
@@ -628,8 +645,7 @@ def generate_answer(query, retrieved, api_key=None, provider="OpenAI", history=N
         return f"{UNGROUNDED}\n\n{local_answer(retrieved, audience)}", retrieved
     if audience == "patient" and _MED_CHANGE.search(raw):
         return f"{UNSAFE_PATIENT}\n\n{local_answer(used, audience)}", used
-    text = clean_markdown(strip_fake_labels(raw, retrieved))
-    return link_markers(text, retrieved), used
+    return clean_markdown(link_markers(strip_fake_labels(raw, retrieved), retrieved)), used
 
 
 SUMMARY_CHARS = 12000
@@ -639,17 +655,18 @@ def summarize_pages(pages, filename, api_key=None, provider="OpenAI"):
     """(summary_markdown, page_range_label). Facts from the document only, no added advice."""
     if not pages:
         return "_No text to summarize._", "no pages"
+    if not api_key:
+        preview = md_escape(pages[0][1][:400])
+        return (f"_Add an API key for an AI summary. First lines of the document:_\n\n> {preview}…", "page 1")
     text, last_page = "", 0
-    names = names_in(" ".join(t for _, t in pages))
+    names = names_in(" ".join(t for _, t in pages)[:PHI_SCAN_CHARS])
     for page, t in pages:
-        if len(text) >= SUMMARY_CHARS:
+        room = SUMMARY_CHARS - len(text)
+        if room <= 0:
             break
-        text += f"\n[page {page}] {redact_phi(t, names)}"
+        text += f"\n[page {page}] {redact_phi(t[:room], names)}"
         last_page = page
     covered = f"pages 1-{last_page}" if last_page < pages[-1][0] else "all pages"
-    if not api_key:
-        preview = pages[0][1][:400]
-        return (f"_Add an API key for an AI summary. First lines of the document:_\n\n> {preview}…", "page 1")
     prompt = (
         "Summarize this clinical document for a clinician in 3-5 bullet points. Use ONLY facts "
         "stated in the text. Do not add advice, lifestyle suggestions, or anything not in the "
