@@ -5,3 +5,11 @@ backgroundColor = "#ffffff"
 secondaryBackgroundColor = "#ecfeff"
 textColor = "#0f172a"
 font = "sans serif"
+
+[server]
+maxUploadSize = 25
+enableXsrfProtection = true
+maxMessageSize = 50
+
+[browser]
+gatherUsageStats = false

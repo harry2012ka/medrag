@@ -1,0 +1,42 @@
+# SYNTHETIC EDUCATIONAL TEXT written for the MedRAG accuracy benchmark. It is not an official clinical guideline, contains no patient data, and must not be used for patient care.
+=== page 1 ===
+Chronic Kidney Disease: Definition and Staging
+
+Chronic kidney disease is an abnormality of kidney structure or function present for more
+than three months. It is defined by an estimated glomerular filtration rate below
+60 mL/min/1.73 m2, or by markers of kidney damage such as albuminuria, for at least three
+months. Staging uses both the filtration rate category, G1 to G5, and the albuminuria
+category, A1 to A3.
+
+Stage G3a is a filtration rate of 45 to 59, G3b is 30 to 44, G4 is 15 to 29, and G5,
+kidney failure, is below 15. Albuminuria category A2 is a urine albumin-to-creatinine ratio
+of 30 to 300 mg/g, and A3 is above 300 mg/g.
+=== page 2 ===
+Slowing Progression
+
+Treat patients who have chronic kidney disease and albuminuria with an ACE inhibitor or an
+angiotensin receptor blocker at the highest tolerated dose. An SGLT2 inhibitor is
+recommended for most patients with an eGFR of 20 or more, with or without diabetes, to slow
+loss of kidney function. Aim for a blood pressure below 130/80 mmHg.
+
+Avoid nonsteroidal anti-inflammatory drugs, which can reduce kidney function and raise
+potassium. Review all medicines and adjust doses to the current filtration rate.
+=== page 3 ===
+Complications and Monitoring
+
+Monitor for anemia, metabolic acidosis, high potassium and mineral and bone disorder as
+kidney function declines. Check hemoglobin at least once a year in stage G3 and more often
+in later stages. For a serum potassium above 5.5 mmol/L, review diet and drugs that raise
+potassium.
+
+Oral sodium bicarbonate may be considered when serum bicarbonate stays below 18 mmol/L.
+Iodinated contrast for imaging carries a risk of contrast-associated kidney injury;
+ensure the patient is well hydrated beforehand.
+=== page 4 ===
+Referral to Nephrology
+
+Refer to a kidney specialist when the eGFR is below 30, when the urine
+albumin-to-creatinine ratio is persistently above 300 mg/g, when kidney function falls
+rapidly, or when hypertension stays uncontrolled despite four or more drugs. Patients
+approaching kidney failure should receive education about dialysis, kidney transplant and
+conservative care well before treatment is needed.
