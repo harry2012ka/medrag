@@ -1,5 +1,6 @@
 """MedRAG — Streamlit UI for clinical PDF Q&A. All RAG logic lives in rag.py."""
 
+import datetime
 import html
 import os
 
@@ -51,7 +52,8 @@ def model_or_stop():
 # ── Documents ─────────────────────────────────────────────────────────────────
 
 def init_state():
-    defaults = {"docs": {}, "index": None, "records": [], "errors": {}, "messages": [], "ai_used": 0}
+    defaults = {"docs": {}, "index": None, "records": [], "errors": {}, "messages": [], "ai_used": 0,
+                "audience": "clinician"}
     for k, v in defaults.items():
         st.session_state.setdefault(k, v)
 
@@ -83,8 +85,11 @@ def add_document(doc_key, filename, pages, api_key, provider):
         return
     vecs = rag.embed_texts(model, [c["text"] for c in chunks])
     records = [{"source": name, "page": c["page"], "chunk": i, "text": c["text"]} for i, c in enumerate(chunks)]
+    full_text = " ".join(t for _, t in pages)
+    phi = rag.find_phi(full_text)
     st.session_state.docs[doc_key] = {"name": name, "pages": len(pages), "chunks": len(chunks),
-                                      "records": records, "vecs": vecs}
+                                      "records": records, "vecs": vecs, "phi": phi,
+                                      "names": sorted(rag.names_in(full_text))}
     summary, covered = rag.summarize_pages(pages, name, api_key=api_key, provider=provider)
     st.session_state.messages.append({"role": "assistant", "content": f"**Summary of {name}** ({covered})\n\n{summary}",
                                       "citations": [], "summary": True})
@@ -157,12 +162,16 @@ def render_citations(citations):
                         for label in rag.unique_labels(citations)), unsafe_allow_html=True)
     with st.expander("Show the source passages"):
         for c in citations:
-            st.markdown(f"**{rag.citation_label(c)}** · match {c.get('score', 0):.2f}\n\n> {c['text']}")
+            st.markdown(f"**{rag.citation_label(c)}** · match {c.get('similarity', c.get('score', 0)):.2f}\n\n> {c['text']}")
 
 
 def render_sidebar():
     st.sidebar.title("MedRAG")
     st.sidebar.caption("Ask your clinical documents a question.")
+    reader = st.sidebar.radio("Who's reading?", ["Clinician", "Patient"], horizontal=True,
+                              help="Patient mode explains answers in plain language. Answers still "
+                                   "come only from your documents.")
+    st.session_state.audience = reader.lower()
 
     server_provider, server_key = get_server_key()
     if server_provider:
@@ -187,10 +196,19 @@ def render_sidebar():
     if st.session_state.docs:
         for d in st.session_state.docs.values():
             st.sidebar.write(f"📄 {d['name']}: {d['pages']} pages, {d['chunks']} passages")
+            if d.get("phi"):
+                st.sidebar.warning(
+                    f"Possible patient identifiers in {d['name']}: {rag.describe_phi(d['phi'])}. "
+                    "They're hidden before anything is sent to the AI, but this server still holds the "
+                    "file for your session. Use a de-identified copy if you can.")
     else:
         st.sidebar.caption("Nothing indexed yet.")
 
     st.sidebar.divider()
+    if any(not m.get("summary") for m in st.session_state.messages):
+        st.sidebar.download_button("Download this conversation", transcript_markdown(),
+                                   file_name="medrag-conversation.md", mime="text/markdown",
+                                   use_container_width=True)
     c1, c2 = st.sidebar.columns(2)
     if c1.button("Clear chat", use_container_width=True):
         st.session_state.messages = []
@@ -204,6 +222,27 @@ def render_sidebar():
         st.sidebar.info("AI answer limit for this demo reached. You'll still get the exact source passages.")
         api_key = None
     return api_key or None, provider, using_server_key
+
+
+def known_names():
+    """Patient names found (with a label) anywhere in the uploaded documents."""
+    return {n for d in st.session_state.docs.values() for n in d.get("names", [])}
+
+
+def transcript_markdown():
+    """The conversation with its citations, for saving or sharing."""
+    lines = ["# MedRAG conversation", "",
+             f"_Saved {datetime.datetime.now():%Y-%m-%d %H:%M}. Answers come only from the uploaded "
+             "documents; check each cited page. Not a substitute for clinical judgment._", ""]
+    docs = ", ".join(d["name"] for d in st.session_state.docs.values()) or "none"
+    lines += [f"**Documents:** {docs}", ""]
+    for m in st.session_state.messages:
+        who = "Question" if m["role"] == "user" else ("Summary" if m.get("summary") else "Answer")
+        lines += [f"## {who}", "", m["content"], ""]
+        labels = rag.unique_labels(m.get("citations") or [])
+        if labels:
+            lines += ["Sources: " + "; ".join(labels), ""]
+    return "\n".join(lines)
 
 
 def history_for_llm(limit=4):
@@ -228,7 +267,9 @@ def ask(query, api_key, provider, using_server_key):
     st.session_state.messages.append({"role": "user", "content": query, "citations": []})
     with st.chat_message("user"):
         st.markdown(query)
+    audience = st.session_state.get("audience", "clinician")
     with st.chat_message("assistant"):
+        strength = ""
         if not st.session_state.docs:
             answer, citations = "Upload a PDF or click **Try the sample document** in the sidebar first.", []
         else:
@@ -236,28 +277,44 @@ def ask(query, api_key, provider, using_server_key):
                 model = model_or_stop()
                 retrieved = rag.search(st.session_state.index, model, query, st.session_state.records)
                 answer, citations = rag.generate_answer(query, retrieved, api_key=api_key, provider=provider,
-                                                        history=history_for_llm() if api_key else None)
+                                                        history=history_for_llm() if api_key else None,
+                                                        audience=audience, known_names=known_names())
+                strength = rag.match_strength(citations)
                 if api_key and retrieved and using_server_key:
                     st.session_state.ai_used += 1
+        urgent = rag.emergency_notice(query)
+        if urgent:
+            answer = f"{urgent}\n\n{answer}"
         st.markdown(answer)
+        if strength:
+            st.caption(strength)
         render_citations(citations)
-    st.session_state.messages.append({"role": "assistant", "content": answer, "citations": citations})
+    st.session_state.messages.append({"role": "assistant", "content": answer, "citations": citations,
+                                      "strength": strength})
 
 
 def render_chat(api_key, provider, using_server_key):
     st.title("🩺 MedRAG")
     st.markdown(
-        '<div class="medrag-note">⚠️ Reference support for clinicians, not a substitute for clinical judgment. '
-        "Answers come only from your documents; always check the cited page.</div>"
-        '<div class="medrag-note">🔒 Don\'t upload documents containing patient names or other identifying '
-        "information. With AI answers on, the relevant passages are sent to "
-        f"{html.escape(provider)} to write the answer. In free mode nothing leaves this server.</div>",
+        ('<div class="medrag-note">⚠️ Reference support for clinicians, not a substitute for clinical judgment. '
+         "Answers come only from your documents; always check the cited page.</div>"
+         if st.session_state.get("audience") != "patient" else
+         '<div class="medrag-note">⚠️ This explains what your documents say. It is not medical advice and can\'t '
+         "diagnose you. Talk to your doctor, nurse, or pharmacist before changing anything. In an emergency, call 911.</div>")
+        +
+        (('<div class="medrag-note">🔒 Don\'t upload documents containing patient names or other identifying '
+          "information.") if st.session_state.get("audience") != "patient" else
+         '<div class="medrag-note">🔒 Your files stay on this server only while this page is open.')
+        + " Likely identifiers (names, birth dates, record numbers) are hidden before anything is sent to "
+        f"{html.escape(provider)} to write an answer. In free mode nothing leaves this server.</div>",
         unsafe_allow_html=True,
     )
 
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
+            if msg.get("strength"):
+                st.caption(msg["strength"])
             render_citations(msg.get("citations"))
 
     if "sample" in st.session_state.docs:
