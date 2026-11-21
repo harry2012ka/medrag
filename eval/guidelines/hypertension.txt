@@ -1,0 +1,50 @@
+# SYNTHETIC EDUCATIONAL TEXT written for the MedRAG accuracy benchmark. It is not an official clinical guideline, contains no patient data, and must not be used for patient care.
+=== page 1 ===
+Adult Hypertension: Definition and Measurement
+
+Hypertension is diagnosed when the average office blood pressure is 130/80 mmHg or higher
+on two or more readings taken at two or more separate visits. Stage 1 hypertension is a
+systolic pressure of 130 to 139 mmHg or a diastolic pressure of 80 to 89 mmHg. Stage 2
+hypertension is a systolic pressure of 140 mmHg or higher or a diastolic pressure of
+90 mmHg or higher.
+
+Blood pressure should be measured with the patient seated quietly for five minutes, back
+supported, feet flat on the floor, and the arm supported at heart level. Use a cuff whose
+bladder encircles at least 80 percent of the upper arm. Home blood pressure monitoring or
+24-hour ambulatory monitoring is recommended to confirm the diagnosis and to detect white
+coat hypertension or masked hypertension.
+=== page 2 ===
+Lifestyle Therapy
+
+All adults with elevated blood pressure or hypertension should receive lifestyle advice.
+Effective measures include reducing dietary sodium to less than 1,500 mg per day, following
+a DASH-style eating pattern rich in fruit, vegetables and low-fat dairy, losing weight if
+overweight, and doing at least 150 minutes of moderate aerobic activity per week.
+Alcohol should be limited to no more than two drinks per day for men and one drink per day
+for women. Potassium-rich foods are encouraged unless the patient has advanced kidney
+disease.
+=== page 3 ===
+Drug Therapy
+
+Medication is started for stage 1 hypertension when the estimated 10-year cardiovascular
+risk is 10 percent or higher, and for all patients with stage 2 hypertension. First-line
+drug classes are thiazide or thiazide-like diuretics, long-acting dihydropyridine calcium
+channel blockers, ACE inhibitors and angiotensin receptor blockers. For stage 2
+hypertension, starting two first-line agents from different classes is reasonable.
+
+An ACE inhibitor and an angiotensin receptor blocker should not be combined. Check serum
+potassium and creatinine within two to four weeks after starting or increasing an ACE
+inhibitor or angiotensin receptor blocker. The usual treatment target for most adults is
+below 130/80 mmHg.
+=== page 4 ===
+Hypertensive Urgency and Resistant Hypertension
+
+Resistant hypertension is blood pressure above target despite three drugs of different
+classes at optimal doses, one of which is a diuretic. Before adding a fourth drug, check
+adherence, confirm readings out of the office, and look for secondary causes such as
+primary aldosteronism, obstructive sleep apnea and renal artery stenosis. Spironolactone
+is the preferred fourth agent.
+
+A blood pressure of 180/120 mmHg or higher with signs of acute organ damage, such as chest
+pain, neurological deficit or acute kidney injury, is a hypertensive emergency and needs
+immediate hospital treatment.

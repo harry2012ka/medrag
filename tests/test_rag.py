@@ -10,6 +10,7 @@ import os
 import re
 import sys
 import unittest
+import zlib
 from unittest import mock
 
 import numpy as np
@@ -21,12 +22,13 @@ VOCAB_SIZE = 512
 
 
 class BagOfWordsModel:
+    # zlib.crc32, not hash(): Python randomizes hash() per process, which made results vary run to run.
     def encode(self, texts, convert_to_numpy=True, show_progress_bar=False):
         out = np.zeros((len(texts), VOCAB_SIZE), dtype="float32")
         for i, t in enumerate(texts):
             for w in re.findall(r"[a-z0-9]+", t.lower()):
                 if len(w) > 3:
-                    out[i, hash(w) % VOCAB_SIZE] += 1
+                    out[i, zlib.crc32(w.encode()) % VOCAB_SIZE] += 1
         return out
 
 

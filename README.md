@@ -1,86 +1,104 @@
 # MedRAG
 
-**Ask your clinical documents a question. Get an answer with the exact source and passage it came from.**
+**Ask your clinical documents a question. Get an answer with the file and page it came from.**
 
-**🔗 Try it live: [medrag-production-b839.up.railway.app](https://medrag-production-b839.up.railway.app)** — no install needed, upload a PDF and ask a question.
-
-## 🎥 Demo
-
-> _[Loom demo link — paste here]_
+**Demo: https://medrag-production-b839.up.railway.app (sample document built in)**. Click **Try the sample document**, or upload your own PDFs.
 
 ## The problem
 
-Clinical teams sit on huge piles of PDFs — protocols, guidelines, drug monographs, internal SOPs — and finding the one paragraph you need means Ctrl-F-ing through a dozen documents, or worse, relying on memory. General-purpose chatbots either don't have your documents or will happily hallucinate an answer that sounds confident and is wrong. In a clinical setting, an unsourced answer is worse than no answer.
+Clinical teams keep protocols, guidelines, drug monographs and SOPs as PDFs. Finding the one paragraph you need means Ctrl-F through a dozen files. General chatbots don't have your documents and can give a confident wrong answer. In a clinical setting, an answer without a source is worse than no answer.
 
 ## Who it's for
 
-- Clinicians and clinical staff who need fast, traceable answers from internal guidelines or reference PDFs
-- Clinic operations and compliance teams standardizing on protocol documents
-- Anyone who wants document Q&A that's private, cheap (or free), and shows its work
+- Clinicians who need fast, checkable answers from their own reference PDFs
+- Clinic operations and compliance teams working from protocol documents
+- Patients reading their own (de-identified) health documents, through patient mode
 
-## What it does
+## Features
 
-Upload PDFs (or click **Try the sample document**), then ask questions in a chat. Every answer comes only from your documents and **cites the file and page number**, with the exact quoted passage one click away, so you can check it yourself.
+- **Page citations.** Every passage belongs to one page, and every answer shows `file · p. N` tags with the quoted passage one click away. With AI answers on, only the passages the answer actually cited are shown as sources.
+- **Says "not in your documents."** If nothing passes the relevance cutoff, the app says so and doesn't answer from outside your sources.
+- **Hybrid search with clinical abbreviations.** Meaning-based search (`all-MiniLM-L6-v2`) combined with BM25 keyword scoring, so exact drug names, lab names and numbers rank well. About 45 common abbreviations (HTN, eGFR, T2DM, SGLT2, NSAID...) are expanded before searching.
+- **Free by default.** With no API key you get the exact matching passages and nothing leaves the server. Add an OpenAI (`gpt-4o-mini`) or Claude (`claude-haiku-4-5`) key for written answers, follow-up questions and per-document summaries.
+- **Grounded-answer enforcement.** The AI is told to answer only from numbered passages and cite each statement. An AI answer that cites no valid passage isn't shown (you get the passages instead). Fake citation labels, links, images and raw HTML are stripped from AI text. Refusals become the standard "not in your documents" message. Summaries must cite pages and may not add advice.
+- **Patient mode.** "Who's reading?" switches to plain language at about an 8th-grade level. Answers that talk about starting, stopping or changing a medicine are blocked and replaced with the source passages and a "ask your doctor or pharmacist" note.
+- **Emergency notice.** Questions that sound like an emergency (chest pain, can't breathe, stroke signs, overdose, suicidal thoughts, some Spanish phrasings) get a 911 / 988 / Poison Control notice at the top of the answer.
+- **PHI redaction (best effort).** Uploads need a "no patient identifiers" checkbox first. Pattern-based checks flag likely identifiers (SSNs, record numbers, birth dates, labeled names, phone numbers, emails, street addresses) and warn in the sidebar. Those patterns, and labeled names wherever they reappear, are replaced before any text is sent to an AI provider. When the server's shared demo key is in use, AI is turned off entirely for documents with flagged identifiers.
+- **AI budget limits.** With a server-side key, AI calls are capped per browser session (`MEDRAG_MAX_AI_ANSWERS`, default 15), per IP per day (`MEDRAG_MAX_AI_PER_IP_DAY`, 40) and per server per hour (`MEDRAG_MAX_AI_PER_HOUR`, 200). Past a limit the app falls back to free mode. Uploads are capped too (`MEDRAG_MAX_DOCS`, 10 files; `MEDRAG_MAX_CHUNKS`, 5000 passages; 500 pages per PDF; 25 MB per file).
+- **Safe with messy files.** Encrypted, scanned, empty or corrupted PDFs show a message in the sidebar instead of crashing.
+- **Conversation download** as Markdown, with citations.
 
-- **Page-level citations.** Each passage is tied to one page. With AI answers on, only the passages the answer actually used are cited.
-- **Says "I don't know."** If nothing in your documents is relevant enough, it tells you instead of guessing. It never answers clinical questions from outside your sources.
-- **Free by default.** With no API key, it shows the exact relevant passages (nothing leaves the server). Add an OpenAI or Claude key for written answers and per-document summaries.
-- **Follow-up questions** work when AI answers are on.
-- **Safe with messy files.** Encrypted, scanned, empty or corrupted PDFs show a clear message in the sidebar instead of crashing. Removing a file from the uploader removes it from search.
-- **Privacy notice built in.** The app tells users not to upload identifiable patient information and when passages are sent to an AI provider.
-- **Demo-safe server key.** If you set a key on the server, each visitor gets a limited number of AI answers (`MEDRAG_MAX_AI_ANSWERS`, default 15), then falls back to free mode.
+## Safety and limits
 
-**MedRAG is a reference support tool for clinicians. It is not a substitute for clinical judgment**, and the app says so on every screen.
+- **Not a medical device.** MedRAG is a reference tool. It doesn't diagnose, and it is not a substitute for clinical judgment.
+- **Not for real PHI** unless the AI provider you connect is covered by a Business Associate Agreement (BAA) with you. Free mode keeps text on the server, but the server still holds uploaded files in memory for the session.
+- **Redaction is best effort.** It is pattern-based and catches common formats, not every possible identifier. Use de-identified documents.
+- **English only.** Search, abbreviations and safety checks are built for English text (the emergency check also knows a few Spanish phrases).
+- No OCR: scanned or image-only PDFs are refused with a message.
+- Nothing is stored between sessions: refreshing the page clears documents and chat.
 
 ## How it works
 
-1. **Read** each PDF page by page (pypdf).
-2. **Split** each page into passages at sentence boundaries (~800 characters, one sentence of overlap). Passages never cross pages, so every one has a page number.
-3. **Embed** passages locally with `all-MiniLM-L6-v2` and search by cosine similarity (FAISS when installed, numpy otherwise).
-4. **Filter** out weak matches (similarity below 0.30) so off-topic questions get "not in your documents".
-5. **Answer**: free mode quotes the passages; AI mode writes an answer that must cite numbered passages, and only those are shown as sources.
+1. **Read** each PDF page by page with pypdf.
+2. **Split** each page into passages at sentence boundaries (about 800 characters, one sentence of overlap). Passages never cross pages, so each has one page number.
+3. **Search**: expand abbreviations, embed the question locally, score every passage by cosine similarity (FAISS, numpy fallback) plus a BM25 keyword boost. Passages under the cutoff (`MIN_SCORE = 0.30`) are dropped; a strong multi-word keyword match may sit slightly under it. Up to 4 passages are kept, minus any much weaker than the best.
+4. **Answer**: free mode quotes the passages. AI mode sends redacted passages to the provider, then enforces the citation rules above.
+
+## How accuracy is measured
+
+`eval/` holds a retrieval benchmark: 4 synthetic guideline documents (hypertension, type 2 diabetes, CKD, asthma) and 69 questions labeled with the correct file and page. Questions are split into four types: worded like the document, paraphrased, abbreviation-heavy, and unanswerable (should return nothing).
+
+```bash
+python eval/run_eval.py                    # writes eval/results.md
+python eval/run_eval.py --threshold-sweep  # also shows the cutoff trade-off
+```
+
+It reports hit@1 and hit@3 (correct page ranked first / in the top 3), correct-refusal rate on unanswerable questions, false-refusal rate on answerable ones, and a per-type breakdown. It uses the real embedding model when installed. Otherwise it falls back to the offline test model with a warning, and those numbers check the pipeline, not real-world accuracy. See [eval/results.md](eval/results.md) for the latest run.
 
 ## Tech stack
 
-| Layer | Choice | Why |
-|---|---|---|
-| UI | [Streamlit](https://streamlit.io) | Fast to build, fast to run, no frontend build step |
-| PDF extraction | pypdf | Page-by-page text extraction, maintained successor to PyPDF2 |
-| Embeddings | [sentence-transformers](https://www.sbert.net/) (`all-MiniLM-L6-v2`) | Free, local, no API key, fast enough for interactive use |
-| Vector search | [FAISS](https://github.com/facebookresearch/faiss) (cosine, in-memory) with a numpy fallback | Exact search, no external service |
-| Generation | OpenAI `gpt-4o-mini` or Claude `claude-haiku-4-5` (optional) | Only used with a key; otherwise the app returns the relevant passages directly |
+| Layer | Choice |
+|---|---|
+| UI | [Streamlit](https://streamlit.io) |
+| PDF extraction | pypdf |
+| Embeddings | [sentence-transformers](https://www.sbert.net/) `all-MiniLM-L6-v2`, local, no key |
+| Search | FAISS (cosine, in-memory) with numpy fallback, plus BM25 keyword scoring |
+| Generation (optional) | OpenAI `gpt-4o-mini` or Claude `claude-haiku-4-5` |
 
-## Quickstart
-
-```bash
-./run.sh
-```
-
-This creates a virtual environment, installs dependencies, and launches the app at `http://localhost:8501`.
-
-To test the retrieval pipeline on its own (no Streamlit, no PDFs needed):
+## Run it
 
 ```bash
-python demo.py          # needs the embedding model
-pytest -q tests         # offline tests, no model download needed
+./run.sh                 # venv + install + launch at http://localhost:8501
+python demo.py           # pipeline check without Streamlit (needs the embedding model)
+pytest -q tests          # offline tests, no model download or network needed
 ```
 
-To deploy to a fresh GitHub repo:
+To give visitors AI answers without their own key, set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` on the server (environment or `.streamlit/secrets.toml`). The budget limits above then apply.
+
+## Deploy
+
+**Docker (used for the live demo on Railway):** the `Dockerfile` installs CPU-only PyTorch, bakes the embedding model into the image so the first visitor doesn't wait, runs as a non-root user, and listens on `$PORT` (default 8080).
 
 ```bash
-./deploy.sh my-medrag-repo private
+docker build -t medrag . && docker run -p 8080:8080 medrag
 ```
+
+`Procfile` covers Heroku-style hosts. `./deploy.sh <repo-name> <public|private>` creates a GitHub repo and pushes.
+
+## Tests
+
+`tests/` runs offline in GitHub Actions on every push. A small word-hashing model stands in for sentence-transformers, so the tests cover extraction, chunking, search cutoffs, citations, grounded-answer checks, redaction, patient mode, emergency detection and the eval harness.
 
 ## Project layout
 
 ```
-app.py           Streamlit UI
-rag.py           Extraction, chunking, search, answers (no Streamlit)
-demo.py          Standalone pipeline smoke test
-samples/         Sample document for the one-click demo
-tests/           Offline tests (run in GitHub Actions)
-requirements.txt Python dependencies
-run.sh           venv setup + launch
-deploy.sh        git init + GitHub repo creation + push
-PRD.md           Product requirements
+app.py            Streamlit UI, upload handling, AI budget limits
+rag.py            Extraction, chunking, search, safety checks, answers (no Streamlit)
+demo.py           Standalone pipeline check
+samples/          Sample document for the one-click demo
+eval/             Accuracy benchmark: synthetic guidelines, questions, runner, results
+tests/            Offline tests
+Dockerfile        Container for Railway or any Docker host
+run.sh, deploy.sh Local launch, GitHub repo creation
+PRD.md            Product requirements
 ```

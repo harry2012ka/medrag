@@ -1,0 +1,45 @@
+# SYNTHETIC EDUCATIONAL TEXT written for the MedRAG accuracy benchmark. It is not an official clinical guideline, contains no patient data, and must not be used for patient care.
+=== page 1 ===
+Type 2 Diabetes: Screening and Diagnosis
+
+Screen adults aged 35 to 70 who are overweight or obese, and adults of any age with
+additional risk factors such as a family history of diabetes or a history of gestational
+diabetes. Type 2 diabetes is diagnosed by a fasting plasma glucose of 126 mg/dL or higher,
+a hemoglobin A1c of 6.5 percent or higher, a two-hour glucose of 200 mg/dL or higher on an
+oral glucose tolerance test, or a random glucose of 200 mg/dL or higher with classic
+symptoms. Without symptoms, an abnormal result should be repeated to confirm.
+
+Prediabetes is a hemoglobin A1c of 5.7 to 6.4 percent or a fasting glucose of 100 to
+125 mg/dL. People with prediabetes should be offered a structured lifestyle program aiming
+for about 7 percent weight loss.
+=== page 2 ===
+Glycemic Targets and Monitoring
+
+For most nonpregnant adults the hemoglobin A1c goal is below 7 percent. A less strict goal,
+such as below 8 percent, may suit older adults with limited life expectancy or a history of
+severe hypoglycemia. Measure hemoglobin A1c every three months until the goal is reached,
+then at least twice a year.
+
+Hypoglycemia is a blood glucose below 70 mg/dL. Treat it with 15 grams of fast-acting
+carbohydrate, recheck after 15 minutes, and repeat if the glucose is still low. Sulfonylureas
+and insulin carry the highest risk of hypoglycemia.
+=== page 3 ===
+Medication Choices
+
+Metformin is the usual first medication, together with lifestyle change. Metformin should
+not be started when the eGFR is below 45 and should be stopped when the eGFR falls below 30
+mL/min/1.73 m2. Gastrointestinal upset is its most common side effect and can be reduced by
+using the extended-release form and taking it with meals. Long-term use can lower vitamin
+B12 levels.
+
+For patients with atherosclerotic cardiovascular disease, heart failure or chronic kidney
+disease, add an SGLT2 inhibitor or a GLP-1 receptor agonist with proven benefit, regardless
+of the A1c. GLP-1 receptor agonists also produce meaningful weight loss. SGLT2 inhibitors can
+cause genital yeast infections and, rarely, euglycemic diabetic ketoacidosis.
+=== page 4 ===
+Complication Screening
+
+Arrange a dilated eye examination at diagnosis and then every one to two years. Check urine
+albumin-to-creatinine ratio and eGFR at least once a year. Examine the feet at every visit
+and perform a monofilament test for loss of protective sensation at least once a year.
+Most adults with diabetes aged 40 to 75 should take a moderate-intensity statin.

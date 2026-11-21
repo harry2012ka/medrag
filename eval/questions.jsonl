@@ -1,0 +1,69 @@
+{"q": "What blood pressure is diagnosed as hypertension?", "doc": "hypertension.txt", "page": 1, "type": "answerable"}
+{"q": "What systolic pressure defines stage 2 hypertension?", "doc": "hypertension.txt", "page": 1, "type": "answerable"}
+{"q": "What cuff size should be used to measure blood pressure?", "doc": "hypertension.txt", "page": 1, "type": "answerable"}
+{"q": "How much dietary sodium is recommended for hypertension?", "doc": "hypertension.txt", "page": 2, "type": "answerable"}
+{"q": "What are the first-line drug classes for hypertension?", "doc": "hypertension.txt", "page": 3, "type": "answerable"}
+{"q": "Should an ACE inhibitor and an angiotensin receptor blocker be combined?", "doc": "hypertension.txt", "page": 3, "type": "answerable"}
+{"q": "What is resistant hypertension?", "doc": "hypertension.txt", "page": 4, "type": "answerable"}
+{"q": "What blood pressure with organ damage is a hypertensive emergency?", "doc": "hypertension.txt", "page": 4, "type": "answerable"}
+{"q": "What fasting plasma glucose diagnoses type 2 diabetes?", "doc": "type2_diabetes.txt", "page": 1, "type": "answerable"}
+{"q": "What hemoglobin A1c range defines prediabetes?", "doc": "type2_diabetes.txt", "page": 1, "type": "answerable"}
+{"q": "What is the hemoglobin A1c goal for most adults with diabetes?", "doc": "type2_diabetes.txt", "page": 2, "type": "answerable"}
+{"q": "How should hypoglycemia be treated?", "doc": "type2_diabetes.txt", "page": 2, "type": "answerable"}
+{"q": "What is the most common side effect of metformin?", "doc": "type2_diabetes.txt", "page": 3, "type": "answerable"}
+{"q": "When should a dilated eye examination be arranged in diabetes?", "doc": "type2_diabetes.txt", "page": 4, "type": "answerable"}
+{"q": "How is chronic kidney disease defined?", "doc": "ckd.txt", "page": 1, "type": "answerable"}
+{"q": "What filtration rate is stage G4 chronic kidney disease?", "doc": "ckd.txt", "page": 1, "type": "answerable"}
+{"q": "Which patients with chronic kidney disease should receive an SGLT2 inhibitor?", "doc": "ckd.txt", "page": 2, "type": "answerable"}
+{"q": "When should oral sodium bicarbonate be considered?", "doc": "ckd.txt", "page": 3, "type": "answerable"}
+{"q": "When should a patient be referred to nephrology?", "doc": "ckd.txt", "page": 4, "type": "answerable"}
+{"q": "What spirometry result supports a diagnosis of asthma?", "doc": "asthma.txt", "page": 1, "type": "answerable"}
+{"q": "What is the preferred reliever inhaler for asthma?", "doc": "asthma.txt", "page": 2, "type": "answerable"}
+{"q": "What dose of oral prednisolone is used for a moderate asthma exacerbation?", "doc": "asthma.txt", "page": 3, "type": "answerable"}
+{"q": "What are the signs of a life-threatening asthma attack?", "doc": "asthma.txt", "page": 3, "type": "answerable"}
+{"q": "When should a patient be reviewed after an asthma exacerbation?", "doc": "asthma.txt", "page": 3, "type": "answerable"}
+{"q": "How high does someone's pressure need to be before we call it high blood pressure?", "doc": "hypertension.txt", "page": 1, "type": "paraphrase"}
+{"q": "Is it okay to give both a pril and a sartan together for blood pressure?", "doc": "hypertension.txt", "page": 3, "type": "paraphrase"}
+{"q": "How much exercise per week helps bring blood pressure down?", "doc": "hypertension.txt", "page": 2, "type": "paraphrase"}
+{"q": "How many pills can a person be on before their blood pressure counts as hard to control?", "doc": "hypertension.txt", "page": 4, "type": "paraphrase"}
+{"q": "Which fourth tablet is preferred when three blood pressure drugs have failed?", "doc": "hypertension.txt", "page": 4, "type": "paraphrase"}
+{"q": "Which sugar test result means a person has diabetes?", "doc": "type2_diabetes.txt", "page": 1, "type": "paraphrase"}
+{"q": "What should someone do if their blood sugar drops too low?", "doc": "type2_diabetes.txt", "page": 2, "type": "paraphrase"}
+{"q": "Which diabetes pills cause the most low sugar episodes?", "doc": "type2_diabetes.txt", "page": 2, "type": "paraphrase"}
+{"q": "When does kidney function make it unsafe to keep taking metformin?", "doc": "type2_diabetes.txt", "page": 3, "type": "paraphrase"}
+{"q": "Which diabetes drugs help people lose weight?", "doc": "type2_diabetes.txt", "page": 3, "type": "paraphrase"}
+{"q": "How often should feet be checked in people with diabetes?", "doc": "type2_diabetes.txt", "page": 4, "type": "paraphrase"}
+{"q": "Which painkillers should people with kidney damage avoid?", "doc": "ckd.txt", "page": 2, "type": "paraphrase"}
+{"q": "What should be checked when kidney function keeps getting worse?", "doc": "ckd.txt", "page": 3, "type": "paraphrase"}
+{"q": "What should a patient learn about before their kidneys fail?", "doc": "ckd.txt", "page": 4, "type": "paraphrase"}
+{"q": "Which breathing test is best for confirming asthma?", "doc": "asthma.txt", "page": 1, "type": "paraphrase"}
+{"q": "Is it fine to use a rescue inhaler on its own without a steroid inhaler?", "doc": "asthma.txt", "page": 2, "type": "paraphrase"}
+{"q": "What should be added when asthma stays bad despite a steroid and long-acting inhaler?", "doc": "asthma.txt", "page": 2, "type": "paraphrase"}
+{"q": "Which yearly vaccine is recommended for people with asthma?", "doc": "asthma.txt", "page": 3, "type": "paraphrase"}
+{"q": "HTN diagnosis threshold", "doc": "hypertension.txt", "page": 1, "type": "abbreviation"}
+{"q": "first-line meds for HTN", "doc": "hypertension.txt", "page": 3, "type": "abbreviation"}
+{"q": "BP target on treatment", "doc": "hypertension.txt", "page": 3, "type": "abbreviation"}
+{"q": "check K and creatinine after starting ACEi or ARB", "doc": "hypertension.txt", "page": 3, "type": "abbreviation"}
+{"q": "A1c cutoff for T2DM diagnosis", "doc": "type2_diabetes.txt", "page": 1, "type": "abbreviation"}
+{"q": "metformin eGFR cutoff", "doc": "type2_diabetes.txt", "page": 3, "type": "abbreviation"}
+{"q": "SGLT2 or GLP-1 in T2DM with CKD", "doc": "type2_diabetes.txt", "page": 3, "type": "abbreviation"}
+{"q": "statin for DM age 40 to 75", "doc": "type2_diabetes.txt", "page": 4, "type": "abbreviation"}
+{"q": "CKD stage G3b eGFR range", "doc": "ckd.txt", "page": 1, "type": "abbreviation"}
+{"q": "avoid NSAIDs in CKD", "doc": "ckd.txt", "page": 2, "type": "abbreviation"}
+{"q": "eGFR below 30 nephrology referral", "doc": "ckd.txt", "page": 4, "type": "abbreviation"}
+{"q": "FEV1 bronchodilator response in asthma", "doc": "asthma.txt", "page": 1, "type": "abbreviation"}
+{"q": "SOB and wheeze diagnosis of asthma", "doc": "asthma.txt", "page": 1, "type": "abbreviation"}
+{"q": "How do I fix a flat bicycle tire?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the capital of Australia?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "Recommend a good pasta recipe for dinner.", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the warfarin dose for atrial fibrillation?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is acute appendicitis diagnosed?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What antibiotic treats a urinary tract infection in pregnancy?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the dose of amoxicillin for children with otitis media?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How should a migraine be treated in the emergency department?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What vaccines does a newborn baby need?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is rheumatoid arthritis treated with methotrexate?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the treatment for COPD exacerbation with antibiotics?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "Which antidepressant is first-line for major depression?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How do I reset my router password?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What are the symptoms of Lyme disease?", "doc": null, "page": null, "type": "unanswerable"}

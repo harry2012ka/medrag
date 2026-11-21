@@ -1,0 +1,32 @@
+# SYNTHETIC EDUCATIONAL TEXT written for the MedRAG accuracy benchmark. It is not an official clinical guideline, contains no patient data, and must not be used for patient care.
+=== page 1 ===
+Asthma in Adults: Diagnosis
+
+Asthma causes variable respiratory symptoms such as wheeze, shortness of breath, chest
+tightness and cough, together with variable expiratory airflow limitation. Spirometry is
+the preferred test. An increase in FEV1 of more than 12 percent and more than 200 mL after
+a bronchodilator supports the diagnosis. Peak flow variability or a methacholine challenge
+test can help when spirometry is normal.
+=== page 2 ===
+Stepwise Inhaler Treatment
+
+Every adult with asthma should have an inhaled corticosteroid. Short-acting beta-agonist
+inhalers used alone, without an inhaled corticosteroid, are no longer recommended. The
+preferred reliever is a combination inhaler of budesonide and formoterol taken as needed.
+For persistent symptoms, use budesonide-formoterol as both daily maintenance and reliever
+therapy.
+
+If asthma remains uncontrolled on medium-dose inhaled corticosteroid with a long-acting
+beta-agonist, check inhaler technique and adherence, then consider adding a long-acting
+muscarinic antagonist such as tiotropium and refer for specialist assessment.
+=== page 3 ===
+Exacerbations and Action Plans
+
+Give every patient a written asthma action plan. A moderate exacerbation should be treated
+with repeated bronchodilator doses and a short course of oral prednisolone, typically 40 to
+50 mg daily for five to seven days. Signs of a life-threatening attack include a peak flow
+below 33 percent of best, oxygen saturation below 92 percent, a silent chest, cyanosis and
+exhaustion; such patients need urgent hospital care.
+
+Review the patient within two working days after an exacerbation. Annual influenza
+vaccination is recommended.
