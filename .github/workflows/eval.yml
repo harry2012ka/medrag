@@ -3,7 +3,7 @@ name: eval
 # an offline stand-in). Writes eval/results.md as an artifact and the summary to the job page.
 on:
   push:
-    branches: [master]
+    branches: [master, "diligence/**"]   # TEMP: diligence/** removed before merge
   workflow_dispatch:
 jobs:
   eval:
