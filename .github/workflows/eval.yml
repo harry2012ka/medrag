@@ -20,13 +20,16 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
-          key: hf-all-MiniLM-L6-v2
+          key: hf-models-v2
       - name: Install CPU torch + requirements
         run: |
           pip install --index-url https://download.pytorch.org/whl/cpu torch
           pip install -r requirements.txt
       - name: Run benchmark (real model, threshold sweep)
-        run: python eval/run_eval.py --threshold-sweep --require-real --summary "$GITHUB_STEP_SUMMARY"
+        # also measures the optional answerability gate (cross-encoder rerankers), see rag.load_reranker
+        run: >-
+          python eval/run_eval.py --threshold-sweep --require-real --summary "$GITHUB_STEP_SUMMARY"
+          --rerankers "cross-encoder/ms-marco-MiniLM-L-6-v2,cross-encoder/ms-marco-MiniLM-L-12-v2,ncbi/MedCPT-Cross-Encoder,BAAI/bge-reranker-base"
       - name: UI smoke test (real model, Streamlit AppTest)
         run: pip install pytest && pytest -q tests/test_app_smoke.py
       - name: Print full report

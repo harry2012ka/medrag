@@ -8,6 +8,8 @@ Design rules (see CLAUDE.md):
 
 import hashlib
 import io
+import math
+import os
 import re
 
 import numpy as np
@@ -141,6 +143,46 @@ def load_embedding_model():
     return SentenceTransformer(EMBEDDING_MODEL_NAME)
 
 
+# Optional answerability gate: a cross-encoder reads (question, passage) pairs and scores
+# whether the passage answers the question. "off" keeps plain hybrid search.
+RERANKER_NAME = os.environ.get("MEDRAG_RERANKER", "off").strip() or "off"
+RERANK_CANDIDATES = 8     # hybrid-search passages handed to the reranker
+RERANK_MIN = float(os.environ.get("MEDRAG_RERANK_MIN", "0.5"))   # 0-1 (sigmoid of the model's logit)
+
+
+def load_reranker(name=None):
+    """CrossEncoder, or None when disabled. Raises if the model can't load (callers fall back)."""
+    name = (name or RERANKER_NAME).strip()
+    if not name or name.lower() == "off":
+        return None
+    from sentence_transformers import CrossEncoder
+    return CrossEncoder(name, max_length=512)
+
+
+def rerank_scores(reranker, query, texts):
+    """One 0-1 score per text. Logit models (Identity activation) are passed through a sigmoid,
+    so RERANK_MIN means the same thing whichever sentence-transformers version is installed."""
+    if not texts:
+        return []
+    raw = reranker.predict([(query, t) for t in texts], show_progress_bar=False)
+    act = next((a for a in (getattr(reranker, n, None) for n in
+                            ("activation_fn", "activation_fct", "default_activation_function")) if a is not None), None)
+    squash = type(act).__name__ == "Identity"
+    out = []
+    for v in raw:
+        v = float(v[-1]) if hasattr(v, "__len__") else float(v)
+        out.append(1.0 / (1.0 + math.exp(-v)) if squash else v)
+    return out
+
+
+def apply_rerank(candidates, scores, rerank_min=None, top_k=TOP_K):
+    """Keep candidates scoring >= rerank_min, best rerank score first. [] = not in your documents."""
+    rerank_min = RERANK_MIN if rerank_min is None else rerank_min
+    kept = [{**c, "rerank": round(sc, 4)} for c, sc in zip(candidates, scores) if sc >= rerank_min]
+    kept.sort(key=lambda r: r["rerank"], reverse=True)
+    return kept[:top_k]
+
+
 def embed_texts(model, texts):
     """Unit-length float32 vectors, so a dot product is cosine similarity."""
     if not texts:
@@ -269,12 +311,26 @@ KEYWORD_RESCUE = 0.05     # a strong exact-term match may sit this far under MIN
 RESCUE_MIN_TERMS = 2      # ...but only if it matches at least this many distinct question words
 
 
-def search(index, model, query, records, top_k=TOP_K, min_score=MIN_SCORE, max_gap=MAX_GAP_FROM_BEST):
+def search(index, model, query, records, top_k=TOP_K, min_score=MIN_SCORE, max_gap=MAX_GAP_FROM_BEST,
+           reranker=None, rerank_min=None):
     """
     Top passages above the relevance cutoff, best first. [] means 'not in your documents'.
     Hybrid: meaning-based similarity, lifted by exact keyword matches (BM25), with clinical
     abbreviations expanded. Each result has "score" (combined) and "similarity" (meaning only).
+    With a reranker, the top RERANK_CANDIDATES are re-scored by the cross-encoder ("rerank"),
+    those under rerank_min are dropped, and the rest are ordered by that score. If the
+    reranker fails, the plain hybrid result is returned.
     """
+    if reranker is not None:
+        candidates = search(index, model, query, records, top_k=max(top_k, RERANK_CANDIDATES),
+                            min_score=min_score, max_gap=float("inf"))
+        try:
+            scores = rerank_scores(reranker, query, [c["text"] for c in candidates])
+        except Exception:
+            scores = None
+        if scores is not None:
+            return apply_rerank(candidates, scores, rerank_min, top_k)
+    
     if index is None or index.ntotal == 0 or not query.strip():
         return []
     expanded = expand_query(query)

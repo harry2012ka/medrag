@@ -97,6 +97,17 @@ def get_embedding_model():
     return rag.load_embedding_model()
 
 
+@st.cache_resource(show_spinner="Loading the answer checker (first run only)…")
+def get_reranker():
+    """Cross-encoder answerability gate (MEDRAG_RERANKER). None if off or it can't load: search
+    then works exactly as without it."""
+    try:
+        return rag.load_reranker()
+    except Exception as e:
+        print(f"Reranker {rag.RERANKER_NAME!r} unavailable, using plain search: {type(e).__name__}: {e}")
+        return None
+
+
 def model_or_stop():
     try:
         return get_embedding_model()
@@ -368,7 +379,8 @@ def ask(query, api_key, provider, using_server_key):
         else:
             with st.spinner("Searching your documents…"):
                 model = model_or_stop()
-                retrieved = rag.search(st.session_state.index, model, query, st.session_state.records)
+                retrieved = rag.search(st.session_state.index, model, query, st.session_state.records,
+                                       reranker=get_reranker())
                 answer, citations = rag.generate_answer(query, retrieved, api_key=api_key, provider=provider,
                                                         history=history_for_llm() if api_key else None,
                                                         audience=audience, known_names=known_names())
