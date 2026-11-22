@@ -25,9 +25,13 @@ jobs:
           pip install -r requirements.txt
       - name: Run benchmark (real model, threshold sweep)
         run: python eval/run_eval.py --threshold-sweep --require-real --summary "$GITHUB_STEP_SUMMARY"
+      - name: UI smoke test (real model, Streamlit AppTest)
+        run: pip install pytest && pytest -q tests/test_app_smoke.py
       - name: Print full report
+        if: always()
         run: cat eval/results.md
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: eval-results
           path: eval/results.md

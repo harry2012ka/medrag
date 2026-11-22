@@ -36,6 +36,15 @@ h1, h2, h3 { color: #115e59; }
 .medrag-citation { background:#ccfbf1; color:#115e59; border-radius:.4rem; padding:.15rem .5rem;
   font-size:.8rem; margin-right:.3rem; display:inline-block; }
 div[data-testid="stChatMessage"] { background:#fff; border:1px solid #e2e8f0; border-radius:.6rem; }
+.medrag-empty { background:#fff; border:1px solid #99f6e4; border-radius:.6rem; padding:1rem 1.2rem; margin:.4rem 0 .8rem; }
+.medrag-empty ol { margin:.4rem 0 0 1.1rem; padding:0; }
+/* phones: less padding, smaller title, tighter notes, buttons wrap their text */
+@media (max-width: 640px) {
+  .block-container { padding: 1rem .8rem 5rem .8rem !important; }
+  h1 { font-size: 1.6rem !important; }
+  .medrag-note { font-size:.82rem; padding:.5rem .7rem; }
+  .stButton button p { white-space: normal; }
+}
 </style>
 """
 
@@ -376,6 +385,40 @@ def ask(query, api_key, provider, using_server_key):
                                       "strength": strength})
 
 
+def render_how_it_works():
+    with st.expander("How this works and its limits"):
+        st.markdown(
+            "- **Search, then answer.** Your PDFs are split into passages, each tied to one page. Your question "
+            "is matched against them by meaning and by exact keywords (common abbreviations like HTN or eGFR are "
+            "expanded).\n"
+            "- **Every answer cites file and page.** Free mode (no key) shows the exact matching passages and "
+            "nothing leaves this server. With an AI key, the AI may only use those passages and must cite them; "
+            "an answer with no valid citation isn't shown.\n"
+            "- **\"Not in your documents\" is a real answer.** If nothing is relevant enough, you're told so "
+            "instead of getting a guess. This filter isn't perfect: in our benchmark it catches about two out "
+            "of three off-topic questions on its own, so always read the cited page.\n"
+            "- **Not a medical device.** It doesn't diagnose or give advice beyond what your documents say. "
+            "Don't upload real patient records: identifier redaction is pattern-based and best effort.\n"
+            "- English only. No OCR, so scanned PDFs are refused. Nothing is saved after you close the page."
+        )
+
+
+def render_empty_state(api_key, provider, using_server_key):
+    """First thing a visitor sees. On phones the sidebar starts collapsed, so the main actions live here too."""
+    st.markdown(
+        '<div class="medrag-empty"><b>Ask a question, get the answer with the file and page it came from.</b>'
+        "<ol><li>Try the built-in sample guideline (hypertension and diabetes), or upload your own "
+        "de-identified PDFs from the sidebar (on a phone, tap <b>&gt;</b> at the top left).</li>"
+        "<li>Ask in plain words, e.g. <i>What blood pressure counts as hypertension?</i></li>"
+        "<li>Check the cited page. If your documents don't cover it, MedRAG says so.</li></ol></div>",
+        unsafe_allow_html=True,
+    )
+    if st.button("Try the sample document", type="primary", use_container_width=True, key="sample_main"):
+        with st.spinner("Loading the sample document…"):
+            load_sample(api_key, provider, using_server_key)
+        st.rerun()
+
+
 def render_chat(api_key, provider, using_server_key):
     st.title("🩺 MedRAG")
     st.markdown(
@@ -392,6 +435,10 @@ def render_chat(api_key, provider, using_server_key):
         f"{html.escape(provider)} to write an answer. In free mode nothing leaves this server.</div>",
         unsafe_allow_html=True,
     )
+
+    render_how_it_works()
+    if not st.session_state.docs:
+        render_empty_state(api_key, provider, using_server_key)
 
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):

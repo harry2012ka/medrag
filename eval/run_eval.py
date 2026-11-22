@@ -31,7 +31,7 @@ import rag  # noqa: E402
 
 ANSWERABLE_TYPES = ("answerable", "paraphrase", "abbreviation")
 TYPES = ANSWERABLE_TYPES + ("unanswerable",)
-SWEEP = (0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50)
+SWEEP = (0.15, 0.20, 0.25, 0.30, 0.35, 0.38, 0.40, 0.42, 0.45, 0.50)
 
 
 def load_pages(path):
