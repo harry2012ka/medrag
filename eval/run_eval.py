@@ -75,14 +75,21 @@ def build(model, guideline_dir=os.path.join(HERE, "guidelines")):
     return rag.build_index(records, vecs), records
 
 
-def evaluate(model, index, records, questions, min_score=rag.MIN_SCORE):
+FLOOR_SWEEP = (0.40, 0.42, 0.45, 0.48, 0.50)
+
+
+def evaluate(model, index, records, questions, min_score=rag.MIN_SCORE, floor=None):
+    """floor: if set, also refuse when the best passage's similarity is under it (experiment only)."""
     rows = []
     for item in questions:
         hits = rag.search(index, model, item["q"], records, min_score=min_score)
+        best = max((h["similarity"] for h in hits), default=None)
+        if floor is not None and hits and best < floor:
+            hits = []
         found = [(h["source"], h["page"]) for h in hits]
         target = (item.get("doc"), item.get("page"))
         rank = found.index(target) + 1 if target in found else None
-        rows.append({**item, "returned": found, "rank": rank, "refused": not hits})
+        rows.append({**item, "returned": found, "rank": rank, "refused": not hits, "best": best})
     return rows
 
 
@@ -115,6 +122,26 @@ def sweep(model, index, records, questions, values=SWEEP):
     return out
 
 
+def floor_sweep(model, index, records, questions, cutoffs=(0.30, 0.35, 0.38, 0.40), floors=FLOOR_SWEEP):
+    """Inclusion cutoff x confidence floor (best passage similarity needed to answer at all)."""
+    out = []
+    for c in cutoffs:
+        for fl in floors:
+            if fl <= c:
+                continue
+            s = summarize(evaluate(model, index, records, questions, min_score=c, floor=fl))
+            out.append((c, fl, s["hit@1"], s["hit@3"], s["false_refusal"], s["correct_refusal"]))
+    return out
+
+
+def floor_table(rows):
+    lines = ["| MIN_SCORE | floor | hit@1 | hit@3 | false refusal | correct refusal |",
+             "|---|---|---|---|---|---|"]
+    for c, fl, h1, h3, fr, cr in rows:
+        lines.append(f"| {c:.2f} | {fl:.2f} | {h1}% | {h3}% | {fr}% | {cr}% |")
+    return "\n".join(lines)
+
+
 def sweep_table(rows):
     lines = ["| MIN_SCORE | hit@1 | hit@3 | false refusal | correct refusal |", "|---|---|---|---|---|"]
     for v, h1, h3, fr, cr in rows:
@@ -123,7 +150,7 @@ def sweep_table(rows):
     return "\n".join(lines)
 
 
-def report_markdown(model_name, questions, rows, s, sweep_rows=None):
+def report_markdown(model_name, questions, rows, s, sweep_rows=None, floor_rows=None):
     n_docs = len({q["doc"] for q in questions if q.get("doc")})
     lines = [
         "# MedRAG retrieval benchmark results", "",
@@ -149,6 +176,10 @@ def report_markdown(model_name, questions, rows, s, sweep_rows=None):
         lines.append(f"| {t} | {b['n']} | {h1} | {h3} | {b['refused']}% |")
     if sweep_rows:
         lines += ["", "## Relevance cutoff trade-off", "", sweep_table(sweep_rows)]
+    if floor_rows:
+        lines += ["", "## Confidence floor experiment", "",
+                  "Same search, but refuse when the best passage's similarity is under the floor.", "",
+                  floor_table(floor_rows)]
     misses = [r for r in rows if (r["type"] in ANSWERABLE_TYPES and r["rank"] != 1)
               or (r["type"] == "unanswerable" and not r["refused"])]
     lines += ["", "## Misses", ""]
@@ -157,11 +188,12 @@ def report_markdown(model_name, questions, rows, s, sweep_rows=None):
     for r in misses:
         want = f"{r['doc']} p.{r['page']}" if r.get("doc") else "nothing"
         got = ", ".join(f"{d} p.{p}" for d, p in r["returned"]) or "nothing"
-        lines.append(f"- [{r['type']}] {r['q']}: wanted {want}; got {got}")
+        best = f" (best similarity {r['best']:.2f})" if r.get("best") is not None else ""
+        lines.append(f"- [{r['type']}] {r['q']}: wanted {want}; got {got}{best}")
     return "\n".join(lines) + "\n"
 
 
-def summary_markdown(model_name, questions, s, sweep_rows=None):
+def summary_markdown(model_name, questions, s, sweep_rows=None, floor_rows=None):
     """Short report for a CI job summary: headline metrics, per-type table, cutoff sweep."""
     lines = [f"### MedRAG retrieval benchmark ({model_name})", "",
              f"{len(questions)} questions, MIN_SCORE = {rag.MIN_SCORE}, TOP_K = {rag.TOP_K}", "",
@@ -173,6 +205,8 @@ def summary_markdown(model_name, questions, s, sweep_rows=None):
         lines.append(f"| {t} | {b['n']} | {h1} | {h3} | {b['refused']}% |")
     if sweep_rows:
         lines += ["", "#### Relevance cutoff trade-off", "", sweep_table(sweep_rows)]
+    if floor_rows:
+        lines += ["", "#### Confidence floor experiment", "", floor_table(floor_rows)]
     return "\n".join(lines) + "\n"
 
 
@@ -184,12 +218,13 @@ def run(force_fake=False, threshold_sweep=False, out_path=os.path.join(HERE, "re
     rows = evaluate(model, index, records, questions)
     s = summarize(rows)
     sweep_rows = sweep(model, index, records, questions) if threshold_sweep else None
+    floor_rows = floor_sweep(model, index, records, questions) if threshold_sweep else None
     if out_path:
         with open(out_path, "w", encoding="utf-8") as f:
-            f.write(report_markdown(model_name, questions, rows, s, sweep_rows))
+            f.write(report_markdown(model_name, questions, rows, s, sweep_rows, floor_rows))
     if summary_path:
         with open(summary_path, "a", encoding="utf-8") as f:
-            f.write(summary_markdown(model_name, questions, s, sweep_rows))
+            f.write(summary_markdown(model_name, questions, s, sweep_rows, floor_rows))
     if not quiet:
         print(f"Model: {model_name}")
         print(f"{len(questions)} questions, {len(records)} passages")
@@ -200,6 +235,7 @@ def run(force_fake=False, threshold_sweep=False, out_path=os.path.join(HERE, "re
             print(f"  {t:13s} n={b['n']:3d}  {hits}returned nothing {b['refused']:5.1f}%")
         if sweep_rows:
             print("\n" + sweep_table(sweep_rows))
+            print("\n" + floor_table(floor_rows))
         if out_path:
             print(f"\nWrote {os.path.relpath(out_path, ROOT)}")
     return s

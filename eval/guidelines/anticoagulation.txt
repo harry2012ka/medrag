@@ -1,0 +1,61 @@
+# SYNTHETIC EDUCATIONAL TEXT written for the MedRAG accuracy benchmark. It is not an official clinical guideline, contains no patient data, and must not be used for patient care.
+=== page 1 ===
+Anticoagulation Basics: Who Needs It
+
+In atrial fibrillation not caused by a mechanical valve or moderate to severe mitral
+stenosis, stroke risk is estimated with the CHA2DS2-VASc score. Oral anticoagulation is
+recommended for men with a score of 2 or more and women with a score of 3 or more, and
+should be considered for men scoring 1 and women scoring 2. Aspirin alone is not an
+acceptable substitute for stroke prevention.
+
+Bleeding risk can be estimated with HAS-BLED. A score of 3 or more marks higher bleeding
+risk. It should prompt correction of modifiable factors such as uncontrolled blood
+pressure, alcohol excess and unnecessary antiplatelet drugs, and closer follow-up, but on
+its own it is not a reason to withhold anticoagulation.
+
+A provoked deep vein thrombosis or pulmonary embolism is treated for at least 3 months.
+Unprovoked or recurrent clots may need extended treatment after a review of bleeding risk.
+=== page 2 ===
+Direct Oral Anticoagulants
+
+For nonvalvular atrial fibrillation, a direct oral anticoagulant is preferred over
+warfarin because it causes less intracranial bleeding and needs no routine INR testing.
+Direct oral anticoagulants should not be used with a mechanical heart valve or with
+moderate to severe mitral stenosis.
+
+Apixaban is given as 5 mg twice daily. The dose is lowered to 2.5 mg twice daily when the
+patient has at least two of the following: age 80 or older, body weight 60 kg or less, or
+serum creatinine 1.5 mg/dL or higher. Rivaroxaban is given as 20 mg once daily with the
+evening meal, or 15 mg if creatinine clearance is 15 to 50 mL/min. Dabigatran is given as
+150 mg twice daily and is largely cleared by the kidneys.
+
+Kidney function should be checked at least once a year, and more often in older adults or
+when kidney function is falling.
+=== page 3 ===
+Warfarin
+
+The target INR is 2.0 to 3.0 for atrial fibrillation and venous thromboembolism, and 2.5
+to 3.5 for a mechanical mitral valve. A usual starting dose is 5 mg daily; 2 to 3 mg is
+more suitable for frail or older patients and those with liver disease or heart failure.
+
+Check the INR every few days while starting treatment. Once the dose is stable, the
+interval can be stretched to every 4 weeks, and up to 12 weeks for very stable patients.
+
+Many drugs change the warfarin effect, including several antibiotics, amiodarone and
+fluconazole, so check the INR within a week of starting or stopping an interacting drug.
+Patients do not need to avoid vitamin K rich foods such as leafy greens, but should keep
+their intake consistent from week to week.
+=== page 4 ===
+Bleeding, Reversal and Procedures
+
+If the INR is above 9 without bleeding, hold warfarin and give oral vitamin K 2.5 to 5 mg.
+For an INR between 4.5 and 9 without bleeding, hold one or two doses and recheck. For major
+bleeding on warfarin, give intravenous vitamin K 10 mg together with four-factor
+prothrombin complex concentrate.
+
+Idarucizumab reverses dabigatran. Andexanet alfa can reverse apixaban and rivaroxaban;
+prothrombin complex concentrate is an alternative where it is not available.
+
+Before elective surgery, stop a direct oral anticoagulant 24 to 48 hours ahead depending
+on bleeding risk, and longer when kidney function is reduced. Most patients with atrial
+fibrillation who stop warfarin for surgery do not need heparin bridging.

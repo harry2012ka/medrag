@@ -1,0 +1,50 @@
+# SYNTHETIC EDUCATIONAL TEXT written for the MedRAG accuracy benchmark. It is not an official clinical guideline, contains no patient data, and must not be used for patient care.
+=== page 1 ===
+COPD: Diagnosis and Severity
+
+Suspect chronic obstructive pulmonary disease in adults over 35 with a smoking or
+occupational exposure history who report breathlessness on exertion, chronic cough,
+regular sputum or frequent winter chest infections. The diagnosis is confirmed by
+spirometry showing a post-bronchodilator FEV1/FVC ratio below 0.70.
+
+Airflow limitation is graded by FEV1 as a percentage of predicted: grade 1 is 80 percent or
+more, grade 2 is 50 to 79 percent, grade 3 is 30 to 49 percent and grade 4 is under 30
+percent. Symptoms are scored with the mMRC breathlessness scale or the CAT questionnaire.
+Every person with COPD should be tested once for alpha-1 antitrypsin deficiency.
+=== page 2 ===
+Stable COPD Treatment
+
+Stopping smoking is the single most effective step at any stage. Start with a long-acting
+bronchodilator; a long-acting muscarinic antagonist combined with a long-acting
+beta-agonist is preferred when symptoms are marked. Add an inhaled corticosteroid only
+for people who still have exacerbations and a blood eosinophil count of 300 cells per
+microliter or more. Avoid inhaled corticosteroids when eosinophils are below 100, because
+they raise the risk of pneumonia.
+
+Offer pulmonary rehabilitation to people limited by breathlessness and within 4 weeks
+after a hospital admission. Recommended vaccines are yearly influenza, pneumococcal,
+COVID-19, RSV for older adults and Tdap for those not vaccinated in adolescence.
+=== page 3 ===
+COPD Exacerbations
+
+An exacerbation is a worsening of breathlessness, cough or sputum over less than 14 days.
+Treat with short-acting bronchodilators and oral prednisone 40 mg daily for 5 days.
+Give an antibiotic when sputum turns purulent together with more breathlessness or more
+sputum, or when ventilatory support is needed; amoxicillin-clavulanate, doxycycline or a
+macrolide for 5 days are usual choices.
+
+Aim for an oxygen saturation of 88 to 92 percent, because high-flow oxygen can worsen
+carbon dioxide retention. Start noninvasive ventilation for acute hypercapnic respiratory
+failure with an arterial pH below 7.35. Review inhaler technique before discharge.
+=== page 4 ===
+Oxygen and Advanced COPD
+
+Long-term oxygen therapy improves survival when resting PaO2 is 55 mmHg or lower or
+saturation is 88 percent or lower, confirmed twice over 3 weeks while stable. It should be
+used for at least 15 hours a day. It is also offered at PaO2 56 to 59 mmHg with right
+heart failure or polycythemia. Smoking near oxygen is a fire risk.
+
+For frequent exacerbations despite triple inhaled therapy, consider roflumilast if there
+is chronic bronchitis and FEV1 is under 50 percent, or long-term azithromycin in former
+smokers after checking the QT interval and hearing. Low-dose oral opioids can ease
+refractory breathlessness in advanced disease, alongside advance care planning.
