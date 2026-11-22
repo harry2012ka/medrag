@@ -13,6 +13,8 @@ Run:
   python eval/run_eval.py                    # writes eval/results.md
   python eval/run_eval.py --threshold-sweep  # also prints the MIN_SCORE trade-off table
   python eval/run_eval.py --fake             # force the offline test model
+  python eval/run_eval.py --require-real     # fail instead of falling back to the test model (CI)
+  python eval/run_eval.py --summary FILE     # append a short markdown summary (e.g. $GITHUB_STEP_SUMMARY)
 """
 
 import argparse
@@ -47,12 +49,14 @@ def load_questions(path=os.path.join(HERE, "questions.jsonl")):
         return [json.loads(line) for line in f if line.strip()]
 
 
-def get_model(force_fake=False):
+def get_model(force_fake=False, require_real=False):
     """(model, name). Real model if installed and loadable, else the offline test model."""
     if not force_fake:
         try:
             return rag.load_embedding_model(), rag.EMBEDDING_MODEL_NAME
         except Exception as e:
+            if require_real:
+                raise SystemExit(f"--require-real: embedding model unavailable ({type(e).__name__}: {e})")
             print(f"WARNING: real embedding model unavailable ({type(e).__name__}: {e}).\n"
                   "WARNING: falling back to the offline BagOfWordsModel from tests/. These numbers "
                   "measure the pipeline logic, NOT the accuracy of the deployed app.", file=sys.stderr)
@@ -157,8 +161,24 @@ def report_markdown(model_name, questions, rows, s, sweep_rows=None):
     return "\n".join(lines) + "\n"
 
 
-def run(force_fake=False, threshold_sweep=False, out_path=os.path.join(HERE, "results.md"), quiet=False):
-    model, model_name = get_model(force_fake)
+def summary_markdown(model_name, questions, s, sweep_rows=None):
+    """Short report for a CI job summary: headline metrics, per-type table, cutoff sweep."""
+    lines = [f"### MedRAG retrieval benchmark ({model_name})", "",
+             f"{len(questions)} questions, MIN_SCORE = {rag.MIN_SCORE}, TOP_K = {rag.TOP_K}", "",
+             "| hit@1 | hit@3 | correct refusal | false refusal |", "|---|---|---|---|",
+             f"| {s['hit@1']}% | {s['hit@3']}% | {s['correct_refusal']}% | {s['false_refusal']}% |", "",
+             "| Type | n | hit@1 | hit@3 | returned nothing |", "|---|---|---|---|---|"]
+    for t, b in s["by_type"].items():
+        h1, h3 = ("-", "-") if t == "unanswerable" else (f"{b['hit@1']}%", f"{b['hit@3']}%")
+        lines.append(f"| {t} | {b['n']} | {h1} | {h3} | {b['refused']}% |")
+    if sweep_rows:
+        lines += ["", "#### Relevance cutoff trade-off", "", sweep_table(sweep_rows)]
+    return "\n".join(lines) + "\n"
+
+
+def run(force_fake=False, threshold_sweep=False, out_path=os.path.join(HERE, "results.md"), quiet=False,
+        require_real=False, summary_path=None):
+    model, model_name = get_model(force_fake, require_real)
     index, records = build(model)
     questions = load_questions()
     rows = evaluate(model, index, records, questions)
@@ -167,6 +187,9 @@ def run(force_fake=False, threshold_sweep=False, out_path=os.path.join(HERE, "re
     if out_path:
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(report_markdown(model_name, questions, rows, s, sweep_rows))
+    if summary_path:
+        with open(summary_path, "a", encoding="utf-8") as f:
+            f.write(summary_markdown(model_name, questions, s, sweep_rows))
     if not quiet:
         print(f"Model: {model_name}")
         print(f"{len(questions)} questions, {len(records)} passages")
@@ -187,8 +210,11 @@ def main():
     p.add_argument("--threshold-sweep", action="store_true", help="try several MIN_SCORE values")
     p.add_argument("--fake", action="store_true", help="use the offline test model even if the real one is installed")
     p.add_argument("--out", default=os.path.join(HERE, "results.md"), help="where to write the markdown report")
+    p.add_argument("--require-real", action="store_true", help="exit with an error if the real model can't load")
+    p.add_argument("--summary", default=None, help="append a short markdown summary to this file")
     a = p.parse_args()
-    run(force_fake=a.fake, threshold_sweep=a.threshold_sweep, out_path=a.out)
+    run(force_fake=a.fake, threshold_sweep=a.threshold_sweep, out_path=a.out,
+        require_real=a.require_real, summary_path=a.summary)
 
 
 if __name__ == "__main__":

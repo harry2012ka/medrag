@@ -1,0 +1,33 @@
+name: eval
+# Retrieval benchmark with the REAL all-MiniLM-L6-v2 model (the fast `tests` workflow uses
+# an offline stand-in). Writes eval/results.md as an artifact and the summary to the job page.
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-all-MiniLM-L6-v2
+      - name: Install CPU torch + requirements
+        run: |
+          pip install --index-url https://download.pytorch.org/whl/cpu torch
+          pip install -r requirements.txt
+      - name: Run benchmark (real model, threshold sweep)
+        run: python eval/run_eval.py --threshold-sweep --require-real --summary "$GITHUB_STEP_SUMMARY"
+      - name: Print full report
+        run: cat eval/results.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: eval/results.md
