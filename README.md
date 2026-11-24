@@ -21,29 +21,33 @@ What it is **not**: it doesn't have NotebookLM's polish or writing quality, it i
 
 Retrieval benchmark: 214 hand-labeled questions over 9 synthetic guideline documents (hypertension, type 2 diabetes, CKD, asthma, anticoagulation, pediatric fever, COPD, depression, prenatal care). 72 of the questions are unanswerable, and most of those are hard negatives: same specialty, different drug or condition (enoxaparin dosing, croup, lithium, postpartum hemorrhage...). It runs with the same `all-MiniLM-L6-v2` model and search code as the live app. The [eval workflow](.github/workflows/eval.yml) re-runs it on every push to `master` and on PRs that touch search.
 
-| Metric (MIN_SCORE 0.30) | Result |
-|---|---|
-| Right page ranked **first** (hit@1) | **74.6%** |
-| Right page in the **top 3** (hit@3) | **90.1%** |
-| Answerable questions wrongly refused | **2.8%** |
-| Unanswerable questions correctly refused (search alone) | **34.7%** |
+The live app runs search plus an **answer checker**: a medical cross-encoder ([ncbi/MedCPT-Cross-Encoder](https://huggingface.co/ncbi/MedCPT-Cross-Encoder)) reads each question next to the top 8 passages and drops the ones that don't answer it. If nothing is left, the app says the documents don't cover it.
 
-| Question type | n | hit@1 | hit@3 |
+| Metric | Search alone (MIN_SCORE 0.30) | With the answer checker |
+|---|---|---|
+| Right page ranked **first** (hit@1) | 74.6% | **86.6%** |
+| Right page in the **top 3** (hit@3) | 90.1% | **93.0%** |
+| Answerable questions wrongly refused | 2.8% | **4.9%** |
+| Unanswerable questions correctly refused | 34.7% | **87.5%** |
+| Time per question (CI CPU, all cores) | 7 ms | about 1.0 s (p95 1.2 s) |
+
+| Question type (search alone) | n | hit@1 | hit@3 |
 |---|---|---|---|
 | Worded like the document | 58 | 87.9% | 100% |
 | Paraphrased in plain words | 52 | 63.5% | 84.6% |
 | Abbreviation-heavy ("NIV pH threshold AECOPD") | 32 | 68.8% | 81.2% |
 
-**Finding the right page works. Knowing when not to answer doesn't, yet.** Search alone refuses only about 1 in 3 unanswerable questions. Clearly off-topic ones (tax filing, sourdough) are refused; same-specialty ones mostly aren't. Ask about enoxaparin dosing and you get the anticoagulation pages, because to this embedding model those questions look as close to the documents as real ones do. The unanswerable questions' best matches score up to 0.60, while some real answers score as low as 0.32, so no single cutoff separates them:
+**Why the checker is there.** Search alone found the right page but couldn't tell when not to answer: same-specialty questions the documents don't cover (enoxaparin dosing in an anticoagulation guide, croup in a fever guide) scored as close as real ones, so no cutoff separated them:
 
-| MIN_SCORE | hit@3 | false refusal | correct refusal |
+| MIN_SCORE (search alone) | hit@3 | false refusal | correct refusal |
 |---|---|---|---|
-| **0.30 (current)** | 90.1% | 2.8% | 34.7% |
+| 0.30 | 90.1% | 2.8% | 34.7% |
 | 0.40 | 89.4% | 5.6% | 59.7% |
-| 0.45 | 85.9% | 9.2% | 68.1% |
 | 0.50 | 79.6% | 12.7% | 80.6% |
 
-A separate "confidence floor" (refuse unless the best passage clears a higher bar) did no better than raising the cutoff. So the cutoff stays at 0.30, which favours showing the right page, and every answer shows its source and a match-strength note. In free mode a wrong-topic result is shown as quoted passages, not a written answer. In AI mode the model is told to say "not in your documents" when the passages don't answer the question; this benchmark doesn't measure that step. The likely real fix is an answerability check (a cross-encoder reranker or an LLM "does this passage answer the question?" pass), not a threshold.
+Four cross-encoders were tested against a bar set in advance (correct refusal at least 70%, false refusal at most 5%, hit@3 at least 85%). Only MedCPT passed. The general-purpose MiniLM checkers refused too many real questions (12-15%), and bge-reranker-base was slower and refused fewer off-topic ones (60%).
+
+**The catch:** the checker's cutoff was picked on these same 214 questions, so the 87.5% is optimistic. It needs a fresh set of questions written after the fact to confirm it. It also costs about 1 second and 420 MB of memory per server. Set `MEDRAG_RERANKER=off` to run search alone.
 
 An earlier, easier version of this benchmark (69 questions, 4 documents, few hard negatives) scored hit@3 96.4% and correct refusal 64.3%. The bigger set is the honest number. Full results, both sweeps and every miss: [eval/results.md](eval/results.md).
 
@@ -76,7 +80,7 @@ An earlier, easier version of this benchmark (69 questions, 4 documents, few har
 
 1. **Read** each PDF page by page with pypdf.
 2. **Split** each page into passages at sentence boundaries (about 800 characters, one sentence of overlap). Passages never cross pages, so each has one page number.
-3. **Search**: expand abbreviations, embed the question locally, score every passage by cosine similarity (FAISS, numpy fallback) plus a BM25 keyword boost. Passages under the cutoff (`MIN_SCORE = 0.30`) are dropped; a strong multi-word keyword match may sit slightly under it. Up to 4 passages are kept, minus any much weaker than the best.
+3. **Search**: expand abbreviations, embed the question locally, score every passage by cosine similarity (FAISS, numpy fallback) plus a BM25 keyword boost. Passages under the cutoff (`MIN_SCORE = 0.30`, or 0.20 when the answer checker is on) are dropped; a strong multi-word keyword match may sit slightly under it. Up to 4 passages are kept, minus any much weaker than the best. With the answer checker on, the top 8 are re-scored by MedCPT and those under `MEDRAG_RERANK_MIN` (0.02) are dropped; if the checker fails to load or errors, plain search is used.
 4. **Answer**: free mode quotes the passages. AI mode sends redacted passages to the provider, then enforces the citation rules above.
 
 ## How accuracy is measured

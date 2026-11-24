@@ -5,6 +5,7 @@
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
+    MEDRAG_RERANKER=ncbi/MedCPT-Cross-Encoder \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     HF_HOME=/app/.hf
@@ -16,7 +17,9 @@ RUN pip install --index-url https://download.pytorch.org/whl/cpu torch \
  && pip install -r requirements.txt
 
 # bake the search model into the image
-RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+# bake the search model and the answer checker (cross-encoder, about 420 MB RAM) into the image.
+# Set MEDRAG_RERANKER=off on the host to run without the checker.
+RUN python -c "from sentence_transformers import SentenceTransformer, CrossEncoder; SentenceTransformer('all-MiniLM-L6-v2'); CrossEncoder('ncbi/MedCPT-Cross-Encoder', max_length=512)"
 
 COPY . .
 

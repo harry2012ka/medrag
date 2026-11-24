@@ -92,3 +92,25 @@ def test_eval_rerank_study_with_fake_models(monkeypatch, tmp_path):
     run_eval.run(force_fake=True, out_path=str(out), quiet=True, rerankers=["fake-ce"])
     text = out.read_text()
     assert "Answerability gate" in text and "fake-ce" in text and "RERANK_MIN" in text
+
+
+def test_reranker_uses_looser_hybrid_cutoff_and_falls_back_to_normal(monkeypatch):
+    """With a reranker the hybrid cutoff defaults to RERANK_HYBRID_MIN (the gate does the
+    refusing); if the reranker fails, plain search uses the normal MIN_SCORE."""
+    seen = []
+    real = rag.search
+
+    def spy(*a, **k):
+        seen.append(k.get("min_score"))
+        return real(*a, **k)
+
+    monkeypatch.setattr(rag, "search", spy)
+    model, index, records = index_for(PAGES)
+    q = "What is the first-line treatment?"
+    real(index, model, q, records, reranker=FakeCrossEncoder())
+    assert seen[0] == rag.RERANK_HYBRID_MIN
+    seen.clear()
+    plain = real(index, model, q, records)
+    failed = real(index, model, q, records, reranker=FakeCrossEncoder(fail=True))
+    assert seen[0] == rag.RERANK_HYBRID_MIN
+    assert [r["page"] for r in failed] == [r["page"] for r in plain]

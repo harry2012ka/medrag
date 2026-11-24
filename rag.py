@@ -147,7 +147,10 @@ def load_embedding_model():
 # whether the passage answers the question. "off" keeps plain hybrid search.
 RERANKER_NAME = os.environ.get("MEDRAG_RERANKER", "off").strip() or "off"
 RERANK_CANDIDATES = 8     # hybrid-search passages handed to the reranker
-RERANK_MIN = float(os.environ.get("MEDRAG_RERANK_MIN", "0.5"))   # 0-1 (sigmoid of the model's logit)
+# Defaults are the setting that passed the benchmark bar with ncbi/MedCPT-Cross-Encoder
+# (eval/results.md): a looser hybrid cutoff feeds the gate, the gate does the refusing.
+RERANK_MIN = float(os.environ.get("MEDRAG_RERANK_MIN", "0.02"))   # 0-1 (sigmoid of the model's logit)
+RERANK_HYBRID_MIN = float(os.environ.get("MEDRAG_RERANK_HYBRID_MIN", "0.20"))  # MIN_SCORE used with a reranker
 
 
 def load_reranker(name=None):
@@ -311,7 +314,7 @@ KEYWORD_RESCUE = 0.05     # a strong exact-term match may sit this far under MIN
 RESCUE_MIN_TERMS = 2      # ...but only if it matches at least this many distinct question words
 
 
-def search(index, model, query, records, top_k=TOP_K, min_score=MIN_SCORE, max_gap=MAX_GAP_FROM_BEST,
+def search(index, model, query, records, top_k=TOP_K, min_score=None, max_gap=MAX_GAP_FROM_BEST,
            reranker=None, rerank_min=None):
     """
     Top passages above the relevance cutoff, best first. [] means 'not in your documents'.
@@ -321,6 +324,9 @@ def search(index, model, query, records, top_k=TOP_K, min_score=MIN_SCORE, max_g
     those under rerank_min are dropped, and the rest are ordered by that score. If the
     reranker fails, the plain hybrid result is returned.
     """
+    explicit = min_score is not None
+    if not explicit:
+        min_score = RERANK_HYBRID_MIN if reranker is not None else MIN_SCORE
     if reranker is not None:
         candidates = search(index, model, query, records, top_k=max(top_k, RERANK_CANDIDATES),
                             min_score=min_score, max_gap=float("inf"))
@@ -330,7 +336,9 @@ def search(index, model, query, records, top_k=TOP_K, min_score=MIN_SCORE, max_g
             scores = None
         if scores is not None:
             return apply_rerank(candidates, scores, rerank_min, top_k)
-    
+        if not explicit:
+            min_score = MIN_SCORE   # reranker failed: plain search with the normal cutoff
+
     if index is None or index.ntotal == 0 or not query.strip():
         return []
     expanded = expand_query(query)
