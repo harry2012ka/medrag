@@ -83,6 +83,7 @@ def build(model, guideline_dir=os.path.join(HERE, "guidelines")):
 FLOOR_SWEEP = (0.40, 0.42, 0.45, 0.48, 0.50)
 RERANK_SWEEP = (0.01, 0.02, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9)
 RERANK_CUTOFFS = (0.20, 0.30)
+LATENCY_SAMPLE = 40   # questions timed per reranker (all cores and single thread)
 # adoption bar for the answerability gate
 BAR = {"correct_refusal": 70.0, "false_refusal": 5.0, "hit@3": 85.0}
 
@@ -189,12 +190,22 @@ def rerank_study(model, index, records, questions, name):
     except Exception:
         params_m = None
     sweep_rows, best = [], None
+    cache = {}   # (question, passage text) -> score; the cutoffs share most candidates
+
+    def scores_for(q, texts):
+        todo = [t for t in texts if (q, t) not in cache]
+        if todo:
+            for t, sc in zip(todo, rag.rerank_scores(ce, q, todo)):
+                cache[(q, t)] = sc
+        return [cache[(q, t)] for t in texts]
+
     for c in RERANK_CUTOFFS:
         scored = []
         for item in questions:
             cands = rag.search(index, model, item["q"], records, top_k=rag.RERANK_CANDIDATES,
                                min_score=c, max_gap=float("inf"))
-            scored.append((cands, rag.rerank_scores(ce, item["q"], [x["text"] for x in cands])))
+            scored.append((cands, scores_for(item["q"], [x["text"] for x in cands])))
+        print(f"  {name}: scored MIN_SCORE {c:.2f} ({round(time.perf_counter() - t)} s)", flush=True)
         for th in RERANK_SWEEP:
             rows = _rows_from(questions, [rag.apply_rerank(cd, sc, th, rag.TOP_K) for cd, sc in scored])
             s = summarize(rows)
@@ -205,14 +216,15 @@ def rerank_study(model, index, records, questions, name):
             if best is None or key > best[0]:
                 best = (key, c, th, rows)
     _, bc, bth, brows = best
-    lat = _latency(lambda q: rag.search(index, model, q, records, min_score=bc, reranker=ce, rerank_min=bth), questions)
+    sample = questions[::max(1, len(questions) // LATENCY_SAMPLE)][:LATENCY_SAMPLE]
+    lat = _latency(lambda q: rag.search(index, model, q, records, min_score=bc, reranker=ce, rerank_min=bth), sample)
     lat1 = None
     try:
         import torch
         n = torch.get_num_threads()
         torch.set_num_threads(1)
         lat1 = _latency(lambda q: rag.search(index, model, q, records, min_score=bc, reranker=ce, rerank_min=bth),
-                        questions)
+                        sample)
         torch.set_num_threads(n)
     except Exception:
         pass
@@ -228,7 +240,7 @@ def rerank_markdown(studies, baseline_latency, heading="##"):
              f"Top {rag.RERANK_CANDIDATES} hybrid passages (at the given MIN_SCORE) are re-scored by the "
              "cross-encoder; passages under RERANK_MIN are dropped. Adoption bar: correct refusal >= "
              f"{BAR['correct_refusal']}%, false refusal <= {BAR['false_refusal']}%, hit@3 >= {BAR['hit@3']}%.", "",
-             f"Plain hybrid search latency: mean {baseline_latency['mean_ms']} ms, p95 {baseline_latency['p95_ms']} ms "
+             f"Latency is timed on {LATENCY_SAMPLE} of the questions. Plain hybrid search latency: mean {baseline_latency['mean_ms']} ms, p95 {baseline_latency['p95_ms']} ms "
              "per question (GitHub Actions CPU).", ""]
     for st in studies:
         if "error" in st:
@@ -329,7 +341,10 @@ def run(force_fake=False, threshold_sweep=False, out_path=os.path.join(HERE, "re
     rr_md = ""
     if rerankers:
         base_lat = _latency(lambda q: rag.search(index, model, q, records), questions)
-        studies = [rerank_study(model, index, records, questions, n) for n in rerankers]
+        studies = []
+        for n in rerankers:
+            print(f"Reranker {n} ...", flush=True)
+            studies.append(rerank_study(model, index, records, questions, n))
         rr_md = rerank_markdown(studies, base_lat)
         for st in studies:
             if "best_rows" in st:
