@@ -1,0 +1,53 @@
+# SYNTHETIC EDUCATIONAL TEXT written for the MedRAG accuracy benchmark. It is not an official clinical guideline, contains no patient data, and must not be used for patient care.
+=== page 1 ===
+Fever in Children: Definition and Measurement
+
+Fever in a child is a temperature of 38.0 C (100.4 F) or higher. In infants under 3 months,
+a rectal reading is the most reliable. From 3 months to about 4 years, an electronic
+axillary or tympanic reading is acceptable. Forehead strip thermometers are unreliable and
+should not be used.
+
+How high the temperature is does not by itself tell you how ill the child is, but any
+fever in a baby under 3 months should be assessed by a clinician the same day. Parents'
+reports that their child feels hot should be taken seriously even if no thermometer was
+used.
+=== page 2 ===
+Red Flags and Young Infants
+
+Every infant 28 days old or younger with a fever needs a full sepsis evaluation, including
+blood, urine and cerebrospinal fluid cultures, admission to hospital and intravenous
+antibiotics while the results are awaited. Infants aged 29 to 60 days can be risk
+stratified with a urinalysis and inflammatory markers such as procalcitonin and C-reactive
+protein.
+
+At any age, warning signs of serious illness include pale, mottled or blue skin, a rash
+that does not fade under pressure, a bulging fontanelle, neck stiffness, grunting or fast
+breathing, a child who cannot be woken or does not respond normally, and fewer wet
+diapers or reduced fluid intake. A child with any of these signs needs urgent face-to-face
+assessment.
+=== page 3 ===
+Medicines for a Feverish Child
+
+Medicines are given to make a distressed child more comfortable, not to bring the number
+down. Acetaminophen (paracetamol) can be used from birth at 15 mg/kg every 4 to 6 hours,
+with no more than 4 doses in 24 hours. Ibuprofen can be used in children older than 3
+months who weigh more than 5 kg, at 10 mg/kg every 6 to 8 hours, and should be avoided in a
+child who is dehydrated.
+
+Do not routinely alternate or combine the two medicines; switch only if the child stays
+distressed before the next dose is due. Aspirin must not be given to anyone under 16
+because of the risk of Reye syndrome. Fever medicines do not prevent febrile seizures.
+Tepid sponging and cold baths are not recommended.
+=== page 4 ===
+Febrile Seizures and Home Care
+
+A simple febrile seizure happens between 6 months and 5 years of age, is generalized,
+lasts less than 15 minutes and does not recur within 24 hours. It does not need routine
+EEG, brain imaging or blood tests if the child recovers fully. A seizure that is focal,
+lasts longer than 15 minutes or repeats within 24 hours is complex and needs further
+assessment.
+
+At home, offer regular fluids, dress the child in light clothing and check on them during
+the night. Keep the child away from nursery or school while the fever lasts. Seek review
+if the fever lasts more than 5 days, which should raise the possibility of Kawasaki
+disease, or if there are signs of dehydration, a new rash, or the parent is worried.

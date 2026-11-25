@@ -15,6 +15,7 @@ Streamlit RAG app for clinical PDF Q&A.
 - Test pipeline only: python demo.py
 - Offline tests: pytest -q tests
 - Accuracy benchmark: python eval/run_eval.py [--threshold-sweep] (writes eval/results.md)
+- Real-model numbers: GitHub Actions `eval` workflow (push to master, PRs touching search, or workflow_dispatch); copy its report into eval/results.md
 
 ## Conventions
 - Keep the free/local path working without any API key — that's the core value prop

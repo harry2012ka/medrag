@@ -1,0 +1,46 @@
+# SYNTHETIC EDUCATIONAL TEXT written for the MedRAG accuracy benchmark. It is not an official clinical guideline, contains no patient data, and must not be used for patient care.
+=== page 1 ===
+Prenatal Care: The First Visit
+
+Confirm the pregnancy and set the due date with a first-trimester ultrasound measurement
+of crown-rump length. Everyone who could become pregnant should take folic acid 0.4 mg
+(400 micrograms) daily from before conception; a 4 mg daily dose is used after a previous
+pregnancy affected by a neural tube defect.
+
+First-visit tests include blood group and Rh type, an antibody screen, a complete blood
+count, rubella immunity, HIV, hepatitis B, syphilis and a urine culture for bacteria
+without symptoms. Review all current medicines and stop any that are unsafe in pregnancy.
+=== page 2 ===
+Screening Through Pregnancy
+
+Offer screening for chromosomal conditions to everyone; cell-free DNA testing can be done
+from 10 weeks. A detailed anatomy ultrasound is done at 18 to 22 weeks. Screen for
+gestational diabetes at 24 to 28 weeks, usually with a 1-hour 50 gram glucose challenge.
+Take a vaginal-rectal swab for group B streptococcus at 36 to 37 weeks.
+
+If the mother is Rh-negative and not sensitized, give anti-D immunoglobulin at about 28
+weeks and again within 72 hours after the birth of an Rh-positive baby, and after any
+bleeding or abdominal trauma.
+=== page 3 ===
+Vaccines, Weight and Lifestyle
+
+Influenza vaccine can be given in any trimester. Give Tdap between 27 and 36 weeks in every
+pregnancy to protect the newborn from whooping cough. RSV vaccine is offered at 32 to 36
+weeks during RSV season. Live vaccines such as MMR and varicella are avoided until after
+delivery.
+
+Recommended total weight gain depends on pre-pregnancy BMI: 11.5 to 16 kg for a normal BMI
+and 5 to 9 kg for BMI 30 or more. No amount of alcohol is known to be safe. Keep caffeine
+under 200 mg a day, avoid high-mercury fish such as swordfish, and avoid unpasteurized
+milk and soft cheeses.
+=== page 4 ===
+Visit Schedule and Warning Signs
+
+Routine visits are every 4 weeks until 28 weeks, every 2 weeks until 36 weeks and weekly
+after that. Preeclampsia is blood pressure of 140/90 or higher after 20 weeks with protein
+in the urine or other severe features. People at high risk of preeclampsia should take
+low-dose aspirin 81 mg daily starting between 12 and 28 weeks, ideally before 16 weeks.
+
+Seek care straight away for vaginal bleeding, leaking fluid, fewer baby movements, a
+severe headache or vision changes, swelling of the face or hands, or regular contractions
+before 37 weeks.

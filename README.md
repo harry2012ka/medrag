@@ -1,23 +1,60 @@
 # MedRAG
 
-**Ask your clinical documents a question. Get an answer with the file and page it came from.**
+**Ask your clinical PDFs a question. Get an answer quoted from your documents, with the file and page, or a plain "that's not in your documents."**
 
-**Demo: https://medrag-production-b839.up.railway.app (sample document built in)**. Click **Try the sample document**, or upload your own PDFs.
+**Live demo: https://medrag-production-b839.up.railway.app**. Tap **Try the sample document**, then ask a question. No sign-up and no key needed.
 
-## The problem
+[![tests](https://github.com/harry2012ka/medrag/actions/workflows/tests.yml/badge.svg)](https://github.com/harry2012ka/medrag/actions/workflows/tests.yml) [![eval](https://github.com/harry2012ka/medrag/actions/workflows/eval.yml/badge.svg)](https://github.com/harry2012ka/medrag/actions/workflows/eval.yml)
 
-Clinical teams keep protocols, guidelines, drug monographs and SOPs as PDFs. Finding the one paragraph you need means Ctrl-F through a dozen files. General chatbots don't have your documents and can give a confident wrong answer. In a clinical setting, an answer without a source is worse than no answer.
+## Why not just ChatGPT or NotebookLM?
 
-## Who it's for
+General chatbots, and even document tools like NotebookLM, are good at writing fluent answers. MedRAG is built around something narrower: **checkable answers, and a refusal when the documents don't cover the question.**
 
-- Clinicians who need fast, checkable answers from their own reference PDFs
-- Clinic operations and compliance teams working from protocol documents
-- Patients reading their own (de-identified) health documents, through patient mode
+- **Free local mode.** With no API key, nothing leaves the server. Search runs on a small local model and you get the exact matching passages. No account and no per-question cost.
+- **Grounded answers only.** With an AI key, the AI may only use the numbered passages it's given and must cite them. An answer that cites no real passage is thrown away and you get the passages instead. Only the passages actually cited are shown as sources.
+- **Refuses when the documents don't cover it.** Passages below a relevance cutoff are dropped, so you get "not in your documents" instead of an answer from the model's general knowledge. (It reliably catches clearly off-topic questions but often misses nearby-topic ones; see the numbers below.)
+- **Clinical guardrails built in.** Best-effort PHI redaction before anything goes to an AI provider, a 911 / 988 / Poison Control notice for emergency-sounding questions, and a patient mode that uses plain language and won't tell you to start, stop or change a medicine.
+
+What it is **not**: it doesn't have NotebookLM's polish or writing quality, it isn't a medical device, and it hasn't been tested on real clinical documents at scale (see Limits).
+
+## Accuracy (real model, measured in CI)
+
+Retrieval benchmark: 214 hand-labeled questions over 9 synthetic guideline documents (hypertension, type 2 diabetes, CKD, asthma, anticoagulation, pediatric fever, COPD, depression, prenatal care). 72 of the questions are unanswerable, and most of those are hard negatives: same specialty, different drug or condition (enoxaparin dosing, croup, lithium, postpartum hemorrhage...). It runs with the same `all-MiniLM-L6-v2` model and search code as the live app. The [eval workflow](.github/workflows/eval.yml) re-runs it on every push to `master` and on PRs that touch search.
+
+The live app runs search plus an **answer checker**: a medical cross-encoder ([ncbi/MedCPT-Cross-Encoder](https://huggingface.co/ncbi/MedCPT-Cross-Encoder)) reads each question next to the top 8 passages and drops the ones that don't answer it. If nothing is left, the app says the documents don't cover it.
+
+| Metric | Search alone (MIN_SCORE 0.30) | With the answer checker |
+|---|---|---|
+| Right page ranked **first** (hit@1) | 74.6% | **86.6%** |
+| Right page in the **top 3** (hit@3) | 90.1% | **93.0%** |
+| Answerable questions wrongly refused | 2.8% | **4.9%** |
+| Unanswerable questions correctly refused | 34.7% | **87.5%** |
+| Time per question (CI CPU, all cores) | 7 ms | about 1.0 s (p95 1.2 s) |
+
+| Question type (search alone) | n | hit@1 | hit@3 |
+|---|---|---|---|
+| Worded like the document | 58 | 87.9% | 100% |
+| Paraphrased in plain words | 52 | 63.5% | 84.6% |
+| Abbreviation-heavy ("NIV pH threshold AECOPD") | 32 | 68.8% | 81.2% |
+
+**Why the checker is there.** Search alone found the right page but couldn't tell when not to answer: same-specialty questions the documents don't cover (enoxaparin dosing in an anticoagulation guide, croup in a fever guide) scored as close as real ones, so no cutoff separated them:
+
+| MIN_SCORE (search alone) | hit@3 | false refusal | correct refusal |
+|---|---|---|---|
+| 0.30 | 90.1% | 2.8% | 34.7% |
+| 0.40 | 89.4% | 5.6% | 59.7% |
+| 0.50 | 79.6% | 12.7% | 80.6% |
+
+Four cross-encoders were tested against a bar set in advance (correct refusal at least 70%, false refusal at most 5%, hit@3 at least 85%). Only MedCPT passed. The general-purpose MiniLM checkers refused too many real questions (12-15%), and bge-reranker-base was slower and refused fewer off-topic ones (60%).
+
+**The catch:** the checker's cutoff was picked on these same 214 questions, so the 87.5% is optimistic. It needs a fresh set of questions written after the fact to confirm it. It also costs about 1 second and 420 MB of memory per server. Set `MEDRAG_RERANKER=off` to run search alone.
+
+An earlier, easier version of this benchmark (69 questions, 4 documents, few hard negatives) scored hit@3 96.4% and correct refusal 64.3%. The bigger set is the honest number. Full results, both sweeps and every miss: [eval/results.md](eval/results.md).
 
 ## Features
 
 - **Page citations.** Every passage belongs to one page, and every answer shows `file · p. N` tags with the quoted passage one click away. With AI answers on, only the passages the answer actually cited are shown as sources.
-- **Says "not in your documents."** If nothing passes the relevance cutoff, the app says so and doesn't answer from outside your sources.
+- **Says "not in your documents."** If nothing passes the relevance cutoff, the app says so and doesn't answer from outside your sources. (Search alone misses many nearby-topic questions; see Accuracy.)
 - **Hybrid search with clinical abbreviations.** Meaning-based search (`all-MiniLM-L6-v2`) combined with BM25 keyword scoring, so exact drug names, lab names and numbers rank well. About 45 common abbreviations (HTN, eGFR, T2DM, SGLT2, NSAID...) are expanded before searching.
 - **Free by default.** With no API key you get the exact matching passages and nothing leaves the server. Add an OpenAI (`gpt-4o-mini`) or Claude (`claude-haiku-4-5`) key for written answers, follow-up questions and per-document summaries.
 - **Grounded-answer enforcement.** The AI is told to answer only from numbered passages and cite each statement. An AI answer that cites no valid passage isn't shown (you get the passages instead). Fake citation labels, links, images and raw HTML are stripped from AI text. Refusals become the standard "not in your documents" message. Summaries must cite pages and may not add advice.
@@ -28,12 +65,14 @@ Clinical teams keep protocols, guidelines, drug monographs and SOPs as PDFs. Fin
 - **Safe with messy files.** Encrypted, scanned, empty or corrupted PDFs show a message in the sidebar instead of crashing.
 - **Conversation download** as Markdown, with citations.
 
-## Safety and limits
+## Limits (read before relying on it)
 
 - **Not a medical device.** MedRAG is a reference tool. It doesn't diagnose, and it is not a substitute for clinical judgment.
 - **Not for real PHI** unless the AI provider you connect is covered by a Business Associate Agreement (BAA) with you. Free mode keeps text on the server, but the server still holds uploaded files in memory for the session.
 - **Redaction is best effort.** It is pattern-based and catches common formats, not every possible identifier. Use de-identified documents.
 - **English only.** Search, abbreviations and safety checks are built for English text (the emergency check also knows a few Spanish phrases).
+- **Weak at spotting unanswerable questions.** On same-specialty questions the documents don't cover, search alone refuses only about 1 in 3 (see Accuracy). Always read the cited passage.
+- **Synthetic benchmark.** 214 questions over 9 synthetic documents, written by the same author as the questions. Good for catching regressions, not proof of accuracy on real hospital documents.
 - No OCR: scanned or image-only PDFs are refused with a message.
 - Nothing is stored between sessions: refreshing the page clears documents and chat.
 
@@ -41,19 +80,27 @@ Clinical teams keep protocols, guidelines, drug monographs and SOPs as PDFs. Fin
 
 1. **Read** each PDF page by page with pypdf.
 2. **Split** each page into passages at sentence boundaries (about 800 characters, one sentence of overlap). Passages never cross pages, so each has one page number.
-3. **Search**: expand abbreviations, embed the question locally, score every passage by cosine similarity (FAISS, numpy fallback) plus a BM25 keyword boost. Passages under the cutoff (`MIN_SCORE = 0.30`) are dropped; a strong multi-word keyword match may sit slightly under it. Up to 4 passages are kept, minus any much weaker than the best.
+3. **Search**: expand abbreviations, embed the question locally, score every passage by cosine similarity (FAISS, numpy fallback) plus a BM25 keyword boost. Passages under the cutoff (`MIN_SCORE = 0.30`, or 0.20 when the answer checker is on) are dropped; a strong multi-word keyword match may sit slightly under it. Up to 4 passages are kept, minus any much weaker than the best. With the answer checker on, the top 8 are re-scored by MedCPT and those under `MEDRAG_RERANK_MIN` (0.02) are dropped; if the checker fails to load or errors, plain search is used.
 4. **Answer**: free mode quotes the passages. AI mode sends redacted passages to the provider, then enforces the citation rules above.
 
 ## How accuracy is measured
 
-`eval/` holds a retrieval benchmark: 4 synthetic guideline documents (hypertension, type 2 diabetes, CKD, asthma) and 69 questions labeled with the correct file and page. Questions are split into four types: worded like the document, paraphrased, abbreviation-heavy, and unanswerable (should return nothing).
+`eval/` holds a retrieval benchmark: 9 synthetic guideline documents and 214 questions labeled with the correct file and page. Questions come in four types: worded like the document (58), paraphrased (52), abbreviation-heavy (32), and unanswerable (72, should return nothing; mostly same-specialty hard negatives plus some clearly off-topic ones).
+
+It reports hit@1 and hit@3 (correct page ranked first / in the top 3), correct-refusal rate on unanswerable questions, false-refusal rate on answerable ones and a per-type breakdown. With `--threshold-sweep` it also reports the same numbers at other `MIN_SCORE` values and with a confidence floor.
+
+**Real numbers come from CI.** The [`eval` workflow](.github/workflows/eval.yml) installs CPU PyTorch and the full requirements, then runs the benchmark with the real `all-MiniLM-L6-v2` model; `--require-real` makes it fail rather than fall back to the test model. It writes the summary table to the job page and uploads `eval/results.md` as an artifact. It runs on every push to `master`, on PRs that change search, the UI or the eval set, and by hand (workflow_dispatch). The numbers above are from [run 45003149788](https://github.com/harry2012ka/medrag/actions/runs/45003149788).
+
+How the questions were written: the documents came first. The questions were then written from a list of page topics, not from the document text, in the words a clinician or patient would use, and the correct page was labelled afterwards. That reduces copying the documents' own wording, but the same author still wrote both, so treat the numbers as a regression check, not proof of accuracy on real clinical PDFs.
+
+Locally:
 
 ```bash
 python eval/run_eval.py                    # writes eval/results.md
 python eval/run_eval.py --threshold-sweep  # also shows the cutoff trade-off
 ```
 
-It reports hit@1 and hit@3 (correct page ranked first / in the top 3), correct-refusal rate on unanswerable questions, false-refusal rate on answerable ones, and a per-type breakdown. It uses the real embedding model when installed. Otherwise it falls back to the offline test model with a warning, and those numbers check the pipeline, not real-world accuracy. See [eval/results.md](eval/results.md) for the latest run.
+Without sentence-transformers installed it falls back to the offline test model with a warning; those numbers check the pipeline, not real-world accuracy.
 
 ## Tech stack
 
@@ -87,7 +134,7 @@ docker build -t medrag . && docker run -p 8080:8080 medrag
 
 ## Tests
 
-`tests/` runs offline in GitHub Actions on every push. A small word-hashing model stands in for sentence-transformers, so the tests cover extraction, chunking, search cutoffs, citations, grounded-answer checks, redaction, patient mode, emergency detection and the eval harness.
+`tests/` runs offline in GitHub Actions on every push (the `tests` workflow, a few seconds). `tests/test_app_smoke.py` clicks through the real Streamlit UI (empty state, sample document, a question with citations, an off-topic refusal); it is skipped without Streamlit installed and runs in the `eval` workflow. A small word-hashing model stands in for sentence-transformers, so the tests cover extraction, chunking, search cutoffs, citations, grounded-answer checks, redaction, patient mode, emergency detection and the eval harness.
 
 ## Project layout
 

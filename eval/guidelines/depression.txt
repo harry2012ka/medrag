@@ -1,0 +1,49 @@
+# SYNTHETIC EDUCATIONAL TEXT written for the MedRAG accuracy benchmark. It is not an official clinical guideline, contains no patient data, and must not be used for patient care.
+=== page 1 ===
+Depression Screening in Primary Care
+
+Screen all adults for depression, including during pregnancy and after birth, when there
+are systems in place to make sure a positive screen is followed up. A two-question
+screen (PHQ-2) asks about low mood and loss of interest over the past two weeks; a positive
+answer is followed by the nine-item PHQ-9.
+
+PHQ-9 totals of 5, 10, 15 and 20 mark mild, moderate, moderately severe and severe
+symptoms. A score of 10 or more usually indicates clinically important depression. Always
+read the answer to item 9, which asks about thoughts of being better off dead or of
+self-harm, whatever the total score.
+=== page 2 ===
+Diagnosis and Suicide Risk
+
+Major depressive disorder needs at least five symptoms for at least two weeks, one of which
+is depressed mood or loss of interest or pleasure. Before diagnosing, ask about past
+episodes of mania or hypomania to rule out bipolar disorder, and consider hypothyroidism,
+anemia, medicines and alcohol or drug use.
+
+Ask about suicidal thoughts directly; asking does not put the idea in a person's head. A
+person with a plan, intent or access to means needs same-day assessment and a safety
+plan, including removal of firearms and stockpiled medicines. In the United States the 988
+Suicide and Crisis Lifeline is available by call or text at any hour.
+=== page 3 ===
+Treatment
+
+For mild depression, offer psychotherapy such as cognitive behavioral therapy or active
+monitoring. For moderate to severe depression, offer psychotherapy, an antidepressant or
+both together. A selective serotonin reuptake inhibitor such as sertraline or escitalopram
+is the usual first medicine because it is well tolerated and safe in overdose.
+
+Review within 2 weeks of starting, then judge the response after 4 to 6 weeks at a full
+dose. If there is little improvement, raise the dose or switch to another medicine.
+Continue treatment for 6 to 12 months after recovery, and longer after repeated episodes.
+People under 25 can have more suicidal thoughts in the first weeks of an antidepressant
+and need closer follow-up.
+=== page 4 ===
+Stopping Treatment and Special Groups
+
+Antidepressants should be tapered over at least 4 weeks rather than stopped suddenly, to
+avoid discontinuation symptoms such as dizziness, irritability, sleep disturbance and
+flu-like feelings. In older adults, start low and go slow, for example sertraline 25 mg.
+
+Sertraline is often chosen during pregnancy and breastfeeding after discussing risks and
+benefits. Screen new mothers for postpartum depression at well-baby visits. Refer to
+psychiatry for psychotic features, suspected bipolar disorder, or no response to two
+adequate medicine trials.

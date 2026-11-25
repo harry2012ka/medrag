@@ -56,14 +56,159 @@
 {"q": "How do I fix a flat bicycle tire?", "doc": null, "page": null, "type": "unanswerable"}
 {"q": "What is the capital of Australia?", "doc": null, "page": null, "type": "unanswerable"}
 {"q": "Recommend a good pasta recipe for dinner.", "doc": null, "page": null, "type": "unanswerable"}
-{"q": "What is the warfarin dose for atrial fibrillation?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the warfarin dose for atrial fibrillation?", "doc": "anticoagulation.txt", "page": 3, "type": "answerable"}
 {"q": "How is acute appendicitis diagnosed?", "doc": null, "page": null, "type": "unanswerable"}
 {"q": "What antibiotic treats a urinary tract infection in pregnancy?", "doc": null, "page": null, "type": "unanswerable"}
 {"q": "What is the dose of amoxicillin for children with otitis media?", "doc": null, "page": null, "type": "unanswerable"}
 {"q": "How should a migraine be treated in the emergency department?", "doc": null, "page": null, "type": "unanswerable"}
 {"q": "What vaccines does a newborn baby need?", "doc": null, "page": null, "type": "unanswerable"}
 {"q": "How is rheumatoid arthritis treated with methotrexate?", "doc": null, "page": null, "type": "unanswerable"}
-{"q": "What is the treatment for COPD exacerbation with antibiotics?", "doc": null, "page": null, "type": "unanswerable"}
-{"q": "Which antidepressant is first-line for major depression?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the treatment for COPD exacerbation with antibiotics?", "doc": "copd.txt", "page": 3, "type": "answerable"}
+{"q": "Which antidepressant is first-line for major depression?", "doc": "depression.txt", "page": 3, "type": "answerable"}
 {"q": "How do I reset my router password?", "doc": null, "page": null, "type": "unanswerable"}
 {"q": "What are the symptoms of Lyme disease?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "At what CHA2DS2-VASc score should a woman with atrial fibrillation be anticoagulated?", "doc": "anticoagulation.txt", "page": 1, "type": "answerable"}
+{"q": "Is a high HAS-BLED score a reason not to start anticoagulation?", "doc": "anticoagulation.txt", "page": 1, "type": "answerable"}
+{"q": "How long should a provoked pulmonary embolism be treated?", "doc": "anticoagulation.txt", "page": 1, "type": "answerable"}
+{"q": "Can aspirin be used instead of an anticoagulant for stroke prevention in atrial fibrillation?", "doc": "anticoagulation.txt", "page": 1, "type": "answerable"}
+{"q": "When should the apixaban dose be reduced?", "doc": "anticoagulation.txt", "page": 2, "type": "answerable"}
+{"q": "What INR range is targeted for a mechanical mitral valve?", "doc": "anticoagulation.txt", "page": 3, "type": "answerable"}
+{"q": "Which reversal agent is used for dabigatran?", "doc": "anticoagulation.txt", "page": 4, "type": "answerable"}
+{"q": "My mom is 82 and very thin, does she need a lower dose of her blood thinner apixaban?", "doc": "anticoagulation.txt", "page": 2, "type": "paraphrase"}
+{"q": "Why are the newer blood thinners usually chosen over warfarin for an irregular heartbeat?", "doc": "anticoagulation.txt", "page": 2, "type": "paraphrase"}
+{"q": "Do I have to stop eating spinach and salad if I'm on warfarin?", "doc": "anticoagulation.txt", "page": 3, "type": "paraphrase"}
+{"q": "How often does someone on warfarin need blood tests once they're stable?", "doc": "anticoagulation.txt", "page": 3, "type": "paraphrase"}
+{"q": "What do you do when a warfarin patient's clotting number is really high but they aren't bleeding?", "doc": "anticoagulation.txt", "page": 4, "type": "paraphrase"}
+{"q": "Do people need a heparin shot bridge when pausing warfarin before an operation?", "doc": "anticoagulation.txt", "page": 4, "type": "paraphrase"}
+{"q": "DOAC with mechanical valve OK?", "doc": "anticoagulation.txt", "page": 2, "type": "abbreviation"}
+{"q": "rivaroxaban dose AF", "doc": "anticoagulation.txt", "page": 2, "type": "abbreviation"}
+{"q": "warfarin INR goal for DVT", "doc": "anticoagulation.txt", "page": 3, "type": "abbreviation"}
+{"q": "PCC + vit K for major bleed on warfarin", "doc": "anticoagulation.txt", "page": 4, "type": "abbreviation"}
+{"q": "What temperature counts as a fever in a child?", "doc": "pediatric_fever.txt", "page": 1, "type": "answerable"}
+{"q": "What is the best way to take a temperature in a baby under 3 months?", "doc": "pediatric_fever.txt", "page": 1, "type": "answerable"}
+{"q": "What workup does a febrile neonate under 28 days need?", "doc": "pediatric_fever.txt", "page": 2, "type": "answerable"}
+{"q": "What is the acetaminophen dose for a child with fever?", "doc": "pediatric_fever.txt", "page": 3, "type": "answerable"}
+{"q": "Why should aspirin not be given to children?", "doc": "pediatric_fever.txt", "page": 3, "type": "answerable"}
+{"q": "What defines a simple febrile seizure?", "doc": "pediatric_fever.txt", "page": 4, "type": "answerable"}
+{"q": "Are those stick-on forehead thermometers accurate for kids?", "doc": "pediatric_fever.txt", "page": 1, "type": "paraphrase"}
+{"q": "What signs mean a child with a temperature needs to be seen urgently?", "doc": "pediatric_fever.txt", "page": 2, "type": "paraphrase"}
+{"q": "Can my 2 month old have ibuprofen?", "doc": "pediatric_fever.txt", "page": 3, "type": "paraphrase"}
+{"q": "Should I switch back and forth between Tylenol and Motrin for my kid's fever?", "doc": "pediatric_fever.txt", "page": 3, "type": "paraphrase"}
+{"q": "Will giving fever medicine stop my child from having a fit?", "doc": "pediatric_fever.txt", "page": 3, "type": "paraphrase"}
+{"q": "Does a toddler need a brain scan after a short seizure with a fever?", "doc": "pediatric_fever.txt", "page": 4, "type": "paraphrase"}
+{"q": "When should parents worry that a fever has gone on too long?", "doc": "pediatric_fever.txt", "page": 4, "type": "paraphrase"}
+{"q": "ibuprofen mg/kg peds", "doc": "pediatric_fever.txt", "page": 3, "type": "abbreviation"}
+{"q": "procalcitonin CRP febrile infant 29-60 days", "doc": "pediatric_fever.txt", "page": 2, "type": "abbreviation"}
+{"q": "fever >5 days Kawasaki", "doc": "pediatric_fever.txt", "page": 4, "type": "abbreviation"}
+{"q": "What spirometry result confirms COPD?", "doc": "copd.txt", "page": 1, "type": "answerable"}
+{"q": "Who should be tested for alpha-1 antitrypsin deficiency?", "doc": "copd.txt", "page": 1, "type": "answerable"}
+{"q": "When should an inhaled corticosteroid be added in COPD?", "doc": "copd.txt", "page": 2, "type": "answerable"}
+{"q": "What prednisone dose is used for a COPD exacerbation?", "doc": "copd.txt", "page": 3, "type": "answerable"}
+{"q": "What oxygen saturation should be targeted in a COPD exacerbation?", "doc": "copd.txt", "page": 3, "type": "answerable"}
+{"q": "Who qualifies for long-term oxygen therapy?", "doc": "copd.txt", "page": 4, "type": "answerable"}
+{"q": "What is the most helpful thing a smoker with emphysema can do?", "doc": "copd.txt", "page": 2, "type": "paraphrase"}
+{"q": "Which shots should people with chronic lung disease from smoking get?", "doc": "copd.txt", "page": 2, "type": "paraphrase"}
+{"q": "When does a chest flare-up in a smoker's lung disease need antibiotics?", "doc": "copd.txt", "page": 3, "type": "paraphrase"}
+{"q": "Why not just give lots of oxygen to someone with emphysema who is struggling to breathe?", "doc": "copd.txt", "page": 3, "type": "paraphrase"}
+{"q": "How many hours a day should home oxygen be used?", "doc": "copd.txt", "page": 4, "type": "paraphrase"}
+{"q": "What can help with breathlessness at the end stage of lung disease?", "doc": "copd.txt", "page": 4, "type": "paraphrase"}
+{"q": "FEV1 30-49% COPD grade", "doc": "copd.txt", "page": 1, "type": "abbreviation"}
+{"q": "LAMA LABA initial COPD tx", "doc": "copd.txt", "page": 2, "type": "abbreviation"}
+{"q": "NIV pH threshold AECOPD", "doc": "copd.txt", "page": 3, "type": "abbreviation"}
+{"q": "roflumilast criteria COPD", "doc": "copd.txt", "page": 4, "type": "abbreviation"}
+{"q": "What does a PHQ-9 score of 15 mean?", "doc": "depression.txt", "page": 1, "type": "answerable"}
+{"q": "Which screening question is followed by the PHQ-9?", "doc": "depression.txt", "page": 1, "type": "answerable"}
+{"q": "How many symptoms are needed to diagnose major depressive disorder?", "doc": "depression.txt", "page": 2, "type": "answerable"}
+{"q": "Does asking about suicide increase the risk?", "doc": "depression.txt", "page": 2, "type": "answerable"}
+{"q": "How long should antidepressants be continued after remission?", "doc": "depression.txt", "page": 3, "type": "answerable"}
+{"q": "How should an antidepressant be stopped?", "doc": "depression.txt", "page": 4, "type": "answerable"}
+{"q": "Should pregnant women be screened for depression?", "doc": "depression.txt", "page": 1, "type": "paraphrase"}
+{"q": "What should you rule out before calling it depression?", "doc": "depression.txt", "page": 2, "type": "paraphrase"}
+{"q": "What number can someone call or text if they are thinking about ending their life?", "doc": "depression.txt", "page": 2, "type": "paraphrase"}
+{"q": "My antidepressant isn't working after a month, what happens next?", "doc": "depression.txt", "page": 3, "type": "paraphrase"}
+{"q": "Are young adults at extra risk when they start antidepressants?", "doc": "depression.txt", "page": 3, "type": "paraphrase"}
+{"q": "Which antidepressant is usually chosen while breastfeeding?", "doc": "depression.txt", "page": 4, "type": "paraphrase"}
+{"q": "When should a depressed patient be sent to a psychiatrist?", "doc": "depression.txt", "page": 4, "type": "paraphrase"}
+{"q": "SSRI first line MDD", "doc": "depression.txt", "page": 3, "type": "abbreviation"}
+{"q": "PHQ-9 item 9 positive", "doc": "depression.txt", "page": 1, "type": "abbreviation"}
+{"q": "sertraline starting dose elderly", "doc": "depression.txt", "page": 4, "type": "abbreviation"}
+{"q": "CBT for mild depression", "doc": "depression.txt", "page": 3, "type": "abbreviation"}
+{"q": "How much folic acid should be taken before pregnancy?", "doc": "prenatal_care.txt", "page": 1, "type": "answerable"}
+{"q": "Which blood tests are done at the first prenatal visit?", "doc": "prenatal_care.txt", "page": 1, "type": "answerable"}
+{"q": "When is gestational diabetes screening done?", "doc": "prenatal_care.txt", "page": 2, "type": "answerable"}
+{"q": "When is the group B strep swab taken?", "doc": "prenatal_care.txt", "page": 2, "type": "answerable"}
+{"q": "When should Tdap be given in pregnancy?", "doc": "prenatal_care.txt", "page": 3, "type": "answerable"}
+{"q": "How is preeclampsia defined?", "doc": "prenatal_care.txt", "page": 4, "type": "answerable"}
+{"q": "How is the due date worked out?", "doc": "prenatal_care.txt", "page": 1, "type": "paraphrase"}
+{"q": "When is the big detailed baby scan done?", "doc": "prenatal_care.txt", "page": 2, "type": "paraphrase"}
+{"q": "What shot does an Rh negative mom get and when?", "doc": "prenatal_care.txt", "page": 2, "type": "paraphrase"}
+{"q": "Can I get the chickenpox or MMR vaccine while pregnant?", "doc": "prenatal_care.txt", "page": 3, "type": "paraphrase"}
+{"q": "How much weight should I gain during pregnancy if my weight is normal?", "doc": "prenatal_care.txt", "page": 3, "type": "paraphrase"}
+{"q": "How much coffee is safe when pregnant?", "doc": "prenatal_care.txt", "page": 3, "type": "paraphrase"}
+{"q": "How often are pregnancy checkups in the third trimester?", "doc": "prenatal_care.txt", "page": 4, "type": "paraphrase"}
+{"q": "What symptoms in pregnancy mean I should get help right away?", "doc": "prenatal_care.txt", "page": 4, "type": "paraphrase"}
+{"q": "low dose ASA preeclampsia prevention timing", "doc": "prenatal_care.txt", "page": 4, "type": "abbreviation"}
+{"q": "cfDNA earliest GA", "doc": "prenatal_care.txt", "page": 2, "type": "abbreviation"}
+{"q": "RSV vaccine GA window pregnancy", "doc": "prenatal_care.txt", "page": 3, "type": "abbreviation"}
+{"q": "folate 4 mg prior NTD", "doc": "prenatal_care.txt", "page": 1, "type": "abbreviation"}
+{"q": "What is the enoxaparin dose for treating a DVT?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is heparin-induced thrombocytopenia diagnosed?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "When is a left atrial appendage occlusion device considered?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What dose of clopidogrel is used after a coronary stent?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is a superficial thrombophlebitis treated?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What causes a prolonged aPTT?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How long should dual antiplatelet therapy continue after a heart attack?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "Should a patient with atrial fibrillation have cardioversion or rate control?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the dose of amoxicillin for strep throat in children?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is croup treated?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "At what age do babies get the measles vaccine?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is bronchiolitis managed in infants?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What causes a rash with fever in hand, foot and mouth disease?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How much oral rehydration solution does a child with diarrhea need?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the treatment for head lice?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is childhood ADHD diagnosed?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is idiopathic pulmonary fibrosis treated?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the treatment for community-acquired pneumonia in adults?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "Which inhaler is used for cystic fibrosis?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is obstructive sleep apnea diagnosed?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "When is a lung cancer screening CT recommended?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What dose of varenicline helps people quit smoking?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is a spontaneous pneumothorax managed?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is generalized anxiety disorder treated?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the starting dose of lithium for bipolar disorder?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is schizophrenia treated with antipsychotics?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the treatment for insomnia without medication?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is alcohol withdrawal managed?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "Which medicines treat PTSD?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is ADHD in adults treated with stimulants?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is morning sickness treated?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What causes a miscarriage in the first trimester?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is an ectopic pregnancy treated with methotrexate?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "When is labor induced for a pregnancy past the due date?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "Which contraceptive is best after giving birth?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is postpartum hemorrhage managed?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is mastitis treated during breastfeeding?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the dose of magnesium sulfate for eclampsia?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the target LDL for someone after a heart attack?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is gout treated during a flare?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the first-line treatment for hypothyroidism?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is iron deficiency anemia treated?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What dose of insulin should type 1 diabetes start on?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is heart failure with reduced ejection fraction treated?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is a peptic ulcer from H. pylori treated?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the treatment for shingles?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How is osteoporosis treated in older women?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What antibiotics treat cellulitis?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How do I change a car tire?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the best way to learn Spanish?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "Who won the World Cup in 2018?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How do I make sourdough bread?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the tallest mountain in Europe?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How do I file my taxes online?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What time zone is Tokyo in?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How do I train my dog to sit?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is a good laptop for programming?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How many planets are in the solar system?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "Write me a poem about the ocean.", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "How do I unclog a kitchen sink?", "doc": null, "page": null, "type": "unanswerable"}
+{"q": "What is the exchange rate from dollars to euros?", "doc": null, "page": null, "type": "unanswerable"}

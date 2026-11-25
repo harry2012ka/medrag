@@ -1,0 +1,42 @@
+name: eval
+# Retrieval benchmark with the REAL all-MiniLM-L6-v2 model (the fast `tests` workflow uses
+# an offline stand-in). Writes eval/results.md as an artifact and the summary to the job page.
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+  pull_request:            # only when something that can move the numbers changes
+    paths: [rag.py, app.py, requirements.txt, "eval/**", tests/test_app_smoke.py, .github/workflows/eval.yml]
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-models-v2
+      - name: Install CPU torch + requirements
+        run: |
+          pip install --index-url https://download.pytorch.org/whl/cpu torch
+          pip install -r requirements.txt
+      - name: Run benchmark (real model, threshold sweep)
+        # also measures the optional answerability gate (cross-encoder rerankers), see rag.load_reranker
+        run: >-
+          python -u eval/run_eval.py --threshold-sweep --require-real --summary "$GITHUB_STEP_SUMMARY"
+          --rerankers "cross-encoder/ms-marco-MiniLM-L-6-v2,cross-encoder/ms-marco-MiniLM-L-12-v2,ncbi/MedCPT-Cross-Encoder,BAAI/bge-reranker-base"
+      - name: UI smoke test (real model, Streamlit AppTest)
+        run: pip install pytest && pytest -q tests/test_app_smoke.py
+      - name: Print full report
+        if: always()
+        run: cat eval/results.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-results
+          path: eval/results.md
