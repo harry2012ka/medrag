@@ -30,6 +30,10 @@ jobs:
         run: >-
           python -u eval/run_eval.py --threshold-sweep --require-real --summary "$GITHUB_STEP_SUMMARY"
           --rerankers "cross-encoder/ms-marco-MiniLM-L-6-v2,cross-encoder/ms-marco-MiniLM-L-12-v2,ncbi/MedCPT-Cross-Encoder,BAAI/bge-reranker-base"
+      - name: Held-out questions (frozen cutoffs, never used for tuning)
+        run: >-
+          python -u eval/run_holdout.py --require-real --reranker ncbi/MedCPT-Cross-Encoder
+          --summary "$GITHUB_STEP_SUMMARY"
       - name: UI smoke test (real model, Streamlit AppTest)
         run: pip install pytest && pytest -q tests/test_app_smoke.py
       - name: Print full report
@@ -39,4 +43,6 @@ jobs:
         if: always()
         with:
           name: eval-results
-          path: eval/results.md
+          path: |
+            eval/results.md
+            eval/holdout_results.md
