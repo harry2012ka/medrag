@@ -1,0 +1,124 @@
+{"q": "Which score estimates stroke risk in atrial fibrillation?", "doc": "anticoagulation.txt", "page": 1, "type": "answerable"}
+{"q": "Is a HAS-BLED score of 3 a reason to withhold anticoagulation?", "doc": "anticoagulation.txt", "page": 1, "type": "answerable"}
+{"q": "When is the apixaban dose reduced to 2.5 mg twice daily?", "doc": "anticoagulation.txt", "page": 2, "type": "answerable"}
+{"q": "What rivaroxaban dose is used when creatinine clearance is 15 to 50 mL/min?", "doc": "anticoagulation.txt", "page": 2, "type": "answerable"}
+{"q": "Why is a direct oral anticoagulant preferred over warfarin in nonvalvular atrial fibrillation?", "doc": "anticoagulation.txt", "page": 2, "type": "answerable"}
+{"q": "How often can the INR be checked once the warfarin dose is stable?", "doc": "anticoagulation.txt", "page": 3, "type": "answerable"}
+{"q": "What reverses dabigatran?", "doc": "anticoagulation.txt", "page": 4, "type": "answerable"}
+{"q": "How is major bleeding on warfarin managed?", "doc": "anticoagulation.txt", "page": 4, "type": "answerable"}
+{"q": "What FEV1 change after bronchodilator supports an asthma diagnosis?", "doc": "asthma.txt", "page": 1, "type": "answerable"}
+{"q": "Which signs mark a life-threatening asthma attack?", "doc": "asthma.txt", "page": 3, "type": "answerable"}
+{"q": "What eGFR range is stage G3b chronic kidney disease?", "doc": "ckd.txt", "page": 1, "type": "answerable"}
+{"q": "Which albumin-to-creatinine ratio defines category A3?", "doc": "ckd.txt", "page": 1, "type": "answerable"}
+{"q": "At what eGFR is an SGLT2 inhibitor recommended in chronic kidney disease?", "doc": "ckd.txt", "page": 2, "type": "answerable"}
+{"q": "When can oral sodium bicarbonate be considered in kidney disease?", "doc": "ckd.txt", "page": 3, "type": "answerable"}
+{"q": "What FEV1 percentage is COPD grade 3?", "doc": "copd.txt", "page": 1, "type": "answerable"}
+{"q": "Which eosinophil count supports adding an inhaled corticosteroid in COPD?", "doc": "copd.txt", "page": 2, "type": "answerable"}
+{"q": "Which vaccines are recommended for people with COPD?", "doc": "copd.txt", "page": 2, "type": "answerable"}
+{"q": "What oxygen saturation target is used during a COPD exacerbation?", "doc": "copd.txt", "page": 3, "type": "answerable"}
+{"q": "When should noninvasive ventilation be started for a COPD exacerbation?", "doc": "copd.txt", "page": 3, "type": "answerable"}
+{"q": "When is roflumilast considered in COPD?", "doc": "copd.txt", "page": 4, "type": "answerable"}
+{"q": "Which PHQ-9 score usually indicates clinically important depression?", "doc": "depression.txt", "page": 1, "type": "answerable"}
+{"q": "What should be ruled out before diagnosing depression?", "doc": "depression.txt", "page": 2, "type": "answerable"}
+{"q": "How long should antidepressant treatment continue after recovery?", "doc": "depression.txt", "page": 3, "type": "answerable"}
+{"q": "Over how long should an antidepressant be tapered?", "doc": "depression.txt", "page": 4, "type": "answerable"}
+{"q": "When should depression be referred to psychiatry?", "doc": "depression.txt", "page": 4, "type": "answerable"}
+{"q": "How long should a patient sit quietly before a blood pressure reading?", "doc": "hypertension.txt", "page": 1, "type": "answerable"}
+{"q": "What alcohol limit is advised for women with high blood pressure?", "doc": "hypertension.txt", "page": 2, "type": "answerable"}
+{"q": "When is medication started for stage 1 hypertension?", "doc": "hypertension.txt", "page": 3, "type": "answerable"}
+{"q": "What is the preferred fourth drug for resistant hypertension?", "doc": "hypertension.txt", "page": 4, "type": "answerable"}
+{"q": "Which thermometers should not be used for children?", "doc": "pediatric_fever.txt", "page": 1, "type": "answerable"}
+{"q": "What evaluation does a febrile infant 28 days or younger need?", "doc": "pediatric_fever.txt", "page": 2, "type": "answerable"}
+{"q": "What makes a febrile seizure complex?", "doc": "pediatric_fever.txt", "page": 4, "type": "answerable"}
+{"q": "What folic acid dose is used after a pregnancy affected by a neural tube defect?", "doc": "prenatal_care.txt", "page": 1, "type": "answerable"}
+{"q": "When is anti-D immunoglobulin given to an Rh-negative mother?", "doc": "prenatal_care.txt", "page": 2, "type": "answerable"}
+{"q": "When is Tdap given during pregnancy?", "doc": "prenatal_care.txt", "page": 3, "type": "answerable"}
+{"q": "How much caffeine is allowed per day in pregnancy?", "doc": "prenatal_care.txt", "page": 3, "type": "answerable"}
+{"q": "When should low-dose aspirin start for preeclampsia prevention?", "doc": "prenatal_care.txt", "page": 4, "type": "answerable"}
+{"q": "Which adults should be screened for type 2 diabetes?", "doc": "type2_diabetes.txt", "page": 1, "type": "answerable"}
+{"q": "How often is hemoglobin A1c measured until the goal is reached?", "doc": "type2_diabetes.txt", "page": 2, "type": "answerable"}
+{"q": "Below what eGFR should metformin be stopped?", "doc": "type2_diabetes.txt", "page": 3, "type": "answerable"}
+{"q": "How often should people with diabetes have a dilated eye exam?", "doc": "type2_diabetes.txt", "page": 4, "type": "answerable"}
+{"q": "Can a baby aspirin replace a blood thinner for stroke prevention in an irregular heartbeat?", "doc": "anticoagulation.txt", "page": 1, "type": "paraphrase"}
+{"q": "My grandma is 82 and weighs 55 kg, does her apixaban need to be a smaller dose?", "doc": "anticoagulation.txt", "page": 2, "type": "paraphrase"}
+{"q": "Do I have to give up spinach and salads while on warfarin?", "doc": "anticoagulation.txt", "page": 3, "type": "paraphrase"}
+{"q": "How many days before an operation should the newer blood thinners be paused?", "doc": "anticoagulation.txt", "page": 4, "type": "paraphrase"}
+{"q": "Is it still okay to use only the blue rescue inhaler for asthma?", "doc": "asthma.txt", "page": 2, "type": "paraphrase"}
+{"q": "How soon after an asthma flare should the patient be seen again?", "doc": "asthma.txt", "page": 3, "type": "paraphrase"}
+{"q": "Which painkillers should people with weak kidneys stay away from?", "doc": "ckd.txt", "page": 2, "type": "paraphrase"}
+{"q": "How do you protect the kidneys before a scan that uses dye?", "doc": "ckd.txt", "page": 3, "type": "paraphrase"}
+{"q": "When should kidney patients start learning about dialysis?", "doc": "ckd.txt", "page": 4, "type": "paraphrase"}
+{"q": "What single change helps smokers' lungs the most in emphysema or chronic bronchitis?", "doc": "copd.txt", "page": 2, "type": "paraphrase"}
+{"q": "When do antibiotics help a smoker's lung flare-up with green phlegm?", "doc": "copd.txt", "page": 3, "type": "paraphrase"}
+{"q": "Can someone using home oxygen still smoke?", "doc": "copd.txt", "page": 4, "type": "paraphrase"}
+{"q": "Does asking someone about suicide make them more likely to do it?", "doc": "depression.txt", "page": 2, "type": "paraphrase"}
+{"q": "Which number can someone in the US call or text in a mental health crisis?", "doc": "depression.txt", "page": 2, "type": "paraphrase"}
+{"q": "How long before you know if an antidepressant is working?", "doc": "depression.txt", "page": 3, "type": "paraphrase"}
+{"q": "Can young adults feel worse when they first start antidepressants?", "doc": "depression.txt", "page": 3, "type": "paraphrase"}
+{"q": "What happens if you suddenly stop your antidepressant?", "doc": "depression.txt", "page": 4, "type": "paraphrase"}
+{"q": "Which antidepressant is usually picked for nursing mothers?", "doc": "depression.txt", "page": 4, "type": "paraphrase"}
+{"q": "How big should the blood pressure cuff be on the arm?", "doc": "hypertension.txt", "page": 1, "type": "paraphrase"}
+{"q": "How much salt per day should someone with high blood pressure aim for?", "doc": "hypertension.txt", "page": 2, "type": "paraphrase"}
+{"q": "What blood tests are needed a few weeks after starting a pril?", "doc": "hypertension.txt", "page": 3, "type": "paraphrase"}
+{"q": "Which hidden causes should be checked when pressure stays high on three pills?", "doc": "hypertension.txt", "page": 4, "type": "paraphrase"}
+{"q": "My 2 month old has a temperature, does she need to see a doctor today?", "doc": "pediatric_fever.txt", "page": 1, "type": "paraphrase"}
+{"q": "What does it mean if a child's rash doesn't go away when you press a glass on it?", "doc": "pediatric_fever.txt", "page": 2, "type": "paraphrase"}
+{"q": "Should I give my toddler Tylenol and Advil at the same time?", "doc": "pediatric_fever.txt", "page": 3, "type": "paraphrase"}
+{"q": "Does a cool bath help bring a child's fever down?", "doc": "pediatric_fever.txt", "page": 3, "type": "paraphrase"}
+{"q": "My kid has had a fever for 6 days, should I worry about anything specific?", "doc": "pediatric_fever.txt", "page": 4, "type": "paraphrase"}
+{"q": "Can my child go to daycare while they still have a fever?", "doc": "pediatric_fever.txt", "page": 4, "type": "paraphrase"}
+{"q": "Which baby scan checks the baby's body parts in mid pregnancy?", "doc": "prenatal_care.txt", "page": 2, "type": "paraphrase"}
+{"q": "Is it safe to have the chickenpox vaccine while pregnant?", "doc": "prenatal_care.txt", "page": 3, "type": "paraphrase"}
+{"q": "How much weight should an obese woman gain during pregnancy?", "doc": "prenatal_care.txt", "page": 3, "type": "paraphrase"}
+{"q": "How often are check-ups in the last month of pregnancy?", "doc": "prenatal_care.txt", "page": 4, "type": "paraphrase"}
+{"q": "What should you do when your sugar drops low?", "doc": "type2_diabetes.txt", "page": 2, "type": "paraphrase"}
+{"q": "Why does metformin upset the stomach and how can that be eased?", "doc": "type2_diabetes.txt", "page": 3, "type": "paraphrase"}
+{"q": "Should people with diabetes take a cholesterol pill?", "doc": "type2_diabetes.txt", "page": 4, "type": "paraphrase"}
+{"q": "What DOAC is preferred over warfarin in AF?", "doc": "anticoagulation.txt", "page": 2, "type": "abbreviation"}
+{"q": "Can a DOAC be used with a mechanical valve?", "doc": "anticoagulation.txt", "page": 2, "type": "abbreviation"}
+{"q": "What INR is targeted in VTE?", "doc": "anticoagulation.txt", "page": 3, "type": "abbreviation"}
+{"q": "When should a LAMA be added in uncontrolled asthma?", "doc": "asthma.txt", "page": 2, "type": "abbreviation"}
+{"q": "What ICS plus LABA is used for maintenance and reliever therapy?", "doc": "asthma.txt", "page": 2, "type": "abbreviation"}
+{"q": "How often is Hb checked in CKD stage G3?", "doc": "ckd.txt", "page": 3, "type": "abbreviation"}
+{"q": "What BP target applies in CKD?", "doc": "ckd.txt", "page": 2, "type": "abbreviation"}
+{"q": "When is ICS avoided in COPD?", "doc": "copd.txt", "page": 2, "type": "abbreviation"}
+{"q": "Which PaO2 qualifies for LTOT?", "doc": "copd.txt", "page": 4, "type": "abbreviation"}
+{"q": "What does PHQ-2 ask about?", "doc": "depression.txt", "page": 1, "type": "abbreviation"}
+{"q": "Which SSRI is first line for depression?", "doc": "depression.txt", "page": 3, "type": "abbreviation"}
+{"q": "When should ABPM be used in HTN?", "doc": "hypertension.txt", "page": 1, "type": "abbreviation"}
+{"q": "Which CCB type is first line for HTN?", "doc": "hypertension.txt", "page": 3, "type": "abbreviation"}
+{"q": "Which tests stratify febrile infants aged 29 to 60 days, CRP and PCT?", "doc": "pediatric_fever.txt", "page": 2, "type": "abbreviation"}
+{"q": "When is cfDNA screening available in pregnancy?", "doc": "prenatal_care.txt", "page": 2, "type": "abbreviation"}
+{"q": "When is GBS screening done?", "doc": "prenatal_care.txt", "page": 2, "type": "abbreviation"}
+{"q": "When is the RSV vaccine given in pregnancy?", "doc": "prenatal_care.txt", "page": 3, "type": "abbreviation"}
+{"q": "What A1c target suits older adults with frequent hypos?", "doc": "type2_diabetes.txt", "page": 2, "type": "abbreviation"}
+{"q": "Which T2DM patients get an SGLT2i or GLP-1 RA regardless of A1c?", "doc": "type2_diabetes.txt", "page": 3, "type": "abbreviation"}
+{"q": "How often is UACR checked in diabetes?", "doc": "type2_diabetes.txt", "page": 4, "type": "abbreviation"}
+{"q": "What INR range is targeted for a mechanical aortic valve?", "type": "unanswerable"}
+{"q": "What is the edoxaban dose for atrial fibrillation?", "type": "unanswerable"}
+{"q": "Which biologic is used for severe eosinophilic asthma?", "type": "unanswerable"}
+{"q": "How is exercise-induced bronchoconstriction treated in athletes?", "type": "unanswerable"}
+{"q": "What phosphate binder is preferred in kidney failure?", "type": "unanswerable"}
+{"q": "How often should hemodialysis sessions be scheduled?", "type": "unanswerable"}
+{"q": "What is the lung cancer screening schedule for heavy smokers?", "type": "unanswerable"}
+{"q": "When is lung volume reduction surgery offered?", "type": "unanswerable"}
+{"q": "How is generalized anxiety disorder screened with the GAD-7?", "type": "unanswerable"}
+{"q": "Is electroconvulsive therapy safe in pregnancy?", "type": "unanswerable"}
+{"q": "What blood pressure target applies to adults over 80?", "type": "unanswerable"}
+{"q": "How is pheochromocytoma confirmed?", "type": "unanswerable"}
+{"q": "What intravenous drug lowers blood pressure in a hypertensive emergency?", "type": "unanswerable"}
+{"q": "What antibiotic treats a urinary tract infection in a child with fever?", "type": "unanswerable"}
+{"q": "What is the measles vaccine schedule for children?", "type": "unanswerable"}
+{"q": "When is a cesarean section recommended for breech presentation?", "type": "unanswerable"}
+{"q": "How is hyperemesis gravidarum managed?", "type": "unanswerable"}
+{"q": "What magnesium sulfate dose prevents eclamptic seizures?", "type": "unanswerable"}
+{"q": "What insulin regimen is started for type 1 diabetes?", "type": "unanswerable"}
+{"q": "How is diabetic ketoacidosis treated in the emergency department?", "type": "unanswerable"}
+{"q": "Which continuous glucose monitor is best?", "type": "unanswerable"}
+{"q": "What dose of tirzepatide is used for weight loss?", "type": "unanswerable"}
+{"q": "How often should a mammogram be done?", "type": "unanswerable"}
+{"q": "What is the shingles vaccine schedule for adults over 50?", "type": "unanswerable"}
+{"q": "How is a migraine treated in the emergency room?", "type": "unanswerable"}
+{"q": "Which statin dose is used after a heart attack?", "type": "unanswerable"}
+{"q": "How is sepsis managed in adults in the first hour?", "type": "unanswerable"}
+{"q": "What is the target TSH when treating hypothyroidism?", "type": "unanswerable"}
